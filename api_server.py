@@ -145,17 +145,24 @@ MOOD_PROMPTS: dict[str, str] = {
     "Middle Eastern":     "Middle Eastern music with oud, darbuka drums, haunting scales, traditional yet modern fusion",
 }
 
-# ── Load model once at startup ────────────────────────────────────
-print("[..] Loading MusicGen model…")
+# ── MusicGen Model Loader (Lazy Initialization) ───────────────────
 _device     = "cuda" if torch.cuda.is_available() else "cpu"
 _dtype      = torch.float16 if _device == "cuda" else torch.float32
 _gpu_name   = torch.cuda.get_device_name(0) if _device == "cuda" else "CPU"
-_processor  = AutoProcessor.from_pretrained(MODEL_NAME)
-_model      = MusicgenForConditionalGeneration.from_pretrained(
-    MODEL_NAME, torch_dtype=_dtype
-).to(_device)
-_model.eval()
-print(f"[OK] Model ready on {_device} ({_gpu_name}) dtype={_dtype}")
+_processor  = None
+_model      = None
+
+def _get_model_and_processor():
+    global _processor, _model
+    if _model is None:
+        print("[..] Loading MusicGen model weights...")
+        _processor = AutoProcessor.from_pretrained(MODEL_NAME)
+        _model = MusicgenForConditionalGeneration.from_pretrained(
+            MODEL_NAME, torch_dtype=_dtype
+        ).to(_device)
+        _model.eval()
+        print(f"[OK] MusicGen model ready on {_device} ({_gpu_name})")
+    return _processor, _model
 
 # ── FastAPI app ───────────────────────────────────────────────────
 app = FastAPI(title="BeatFlow AI", version="2.0.0")
@@ -233,7 +240,8 @@ def _safe_name(label: str) -> str:
 
 def _generate(prompt: str, label: str) -> tuple[Path, float]:
     """Generate audio and save as WAV. Returns (path, duration_seconds)."""
-    inputs = _processor(
+    proc, mdl = _get_model_and_processor()
+    inputs = proc(
         text=[prompt],
         padding=True,
         return_tensors="pt",
@@ -241,11 +249,11 @@ def _generate(prompt: str, label: str) -> tuple[Path, float]:
 
     with torch.inference_mode():
         with torch.autocast(device_type=_device, dtype=_dtype, enabled=(_device == "cuda")):
-            output = _model.generate(**inputs, max_new_tokens=DURATION_TOKENS)
+            output = mdl.generate(**inputs, max_new_tokens=DURATION_TOKENS)
 
     # Shape: [batch, channels, samples] → numpy [samples]
     audio_np = output[0, 0].cpu().float().numpy()
-    sample_rate = _model.config.audio_encoder.sampling_rate
+    sample_rate = mdl.config.audio_encoder.sampling_rate
     duration    = len(audio_np) / sample_rate
 
     ts       = datetime.now().strftime("%H%M%S")
@@ -456,11 +464,12 @@ def continue_beat_endpoint(req: ContinueRequest):
     try:
         from audio_processing import continue_beat
         t0 = time.time()
+        proc, mdl = _get_model_and_processor()
         out_path, duration = continue_beat(
             audio_path=str(audio_path),
             prompt=req.prompt,
-            processor=_processor,
-            model=_model,
+            processor=proc,
+            model=mdl,
             device=_device,
             dtype=_dtype,
         )
