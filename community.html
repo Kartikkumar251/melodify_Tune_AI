@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Community — Melodyfy</title>
+<script>
+(function(){const t=localStorage.getItem('bf_token');if(!t){location.href='index.html';return;}try{const p=JSON.parse(atob(t.split('.')[1]));if(p.exp&&p.exp<Date.now()/1000){localStorage.removeItem('bf_token');location.href='index.html';}}catch(e){localStorage.removeItem('bf_token');location.href='index.html';}})();
+</script>
+<style>
+:root{--bg:#07070a;--bg-canvas:#07070a;--bg-overlay:#0e0e12;--bg-inset:#050508;--border:#2e2e34;--border-muted:#1e1e24;--text-primary:#E8E4DC;--text-secondary:#C9C4BA;--text-muted:#7a7a82;--accent:#EDE8DF;--accent-hover:#F0EDE6;--green-btn:#EDE8DF;--green-hover:#F0EDE6;--green-accent:#EDE8DF;--green-bright:#E8E4DC;--blue:#E8E4DC;--orange:#f0883e;--red:#f87171;--purple:#bc8cff;}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--bg-canvas);color:var(--text-primary);font-family:'Space Grotesk',sans-serif;line-height:1.5;min-height:100vh;}
+h1,h2,h3{font-family:'Archivo Black',sans-serif;color:var(--accent);}
+
+.page-wrap{max-width:900px;margin:0 auto;padding:40px 24px;}
+.page-header{margin-bottom:32px;}
+.page-header h1{font-size:24px;font-weight:700;}
+.page-header p{color:var(--text-muted);font-size:14px;margin-top:6px;}
+
+/* Search */
+.search-bar{display:flex;gap:8px;margin-bottom:32px;}
+.search-input{flex:1;background:var(--bg-inset);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-size:14px;outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--blue);}
+
+/* User grid */
+.users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+
+/* User card */
+.user-card{background:rgba(22,27,34,.75);border:1px solid rgba(48,54,61,.7);border-radius:12px;padding:20px;transition:border-color .2s,transform .2s;position:relative;overflow:hidden;}
+.user-card:hover{border-color:rgba(237,232,223,.4);transform:translateY(-2px);}
+.user-card-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;}
+.user-avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0;font-family:inherit;}
+.user-info{flex:1;min-width:0;}
+.user-name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-bio{font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.user-meta{display:flex;gap:12px;margin-bottom:14px;}
+.user-stat{font-size:12px;color:var(--text-muted);}
+.user-stat strong{color:var(--text-primary);}
+
+/* Follow button */
+.follow-btn{width:100%;padding:6px 0;font-size:13px;font-weight:500;border-radius:6px;cursor:pointer;border:1px solid;transition:all .15s;}
+.follow-btn.following{background:rgba(63,185,80,.15);border-color:rgba(237,232,223,.4);color:var(--green-accent);}
+.follow-btn.following:hover{background:rgba(248,81,73,.1);border-color:var(--red);color:var(--red);}
+.follow-btn.following:hover::after{content:'Unfollow';}
+.follow-btn.following .btn-text{display:none;}
+.follow-btn.following:not(:hover)::after{content:'Following ✓';}
+.follow-btn.not-following{background:var(--green-btn);border-color:rgba(240,246,252,.1);color:#fff;}
+.follow-btn.not-following:hover{background:var(--green-hover);}
+
+/* Section label */
+.section-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;margin-top:4px;display:flex;align-items:center;gap:8px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
+.empty-state .icon{font-size:3rem;margin-bottom:12px;}
+
+/* Fade in */
+.fade-in{opacity:0;transform:translateY(14px);transition:opacity .4s,transform .4s;}
+.fade-in.visible{opacity:1;transform:none;}
+
+.skeleton{background:rgba(48,54,61,.5);border-radius:8px;animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:.8;}}
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+
+<div class="page-wrap">
+<div class="page-header fade-in">
+<h1>Community</h1>
+<p>Follow creators and discover who's making beats on Melodyfy</p>
+</div>
+
+<div class="search-bar fade-in">
+<input class="search-input" type="text" id="search-q" placeholder="Search users by username…" oninput="debouncedSearch(this.value)">
+<button class="btn btn-green" onclick="runSearch()">Search</button>
+</div>
+
+<!-- Suggested section -->
+<div id="suggested-section">
+<div class="section-label">Suggested People</div>
+<div class="users-grid" id="suggested-grid">
+  ${[1,2,3,4,5,6].map(()=>'<div class="user-card"><div style="display:flex;gap:14px;align-items:center;"><div class="skeleton" style="width:52px;height:52px;border-radius:50%;"></div><div style="flex:1;"><div class="skeleton" style="height:16px;width:70%;margin-bottom:8px;"></div><div class="skeleton" style="height:12px;width:90%;"></div></div></div></div>').join('')}
+</div>
+</div>
+
+<!-- Search results section -->
+<div id="results-section" style="display:none;margin-top:32px;">
+<div class="section-label" id="results-label">Search Results</div>
+<div class="users-grid" id="results-grid"></div>
+<div class="empty-state" id="results-empty" style="display:none;">
+<div class="icon"></div>
+<div style="font-size:16px;font-weight:600;color:var(--text-primary);">No users found</div>
+<div style="font-size:13px;margin-top:6px;">Try a different search term</div>
+</div>
+</div>
+</div>
+
+<script>
+const API='http://localhost:8000';
+const token=localStorage.getItem('bf_token');
+let _me=null;
+const _followState={};
+let _searchTimer=null;
+
+function signOut(){localStorage.removeItem('bf_token');localStorage.removeItem('bf_user');location.href='index.html';}
+function authH(){return{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'};}
+
+function avatarColor(s){const hues=[142,207,120,40,264,0,180];let h=0;for(let i=0;i<s.length;i++)h+=s.charCodeAt(i);return `hsl(${hues[h%hues.length]},60%,38%)`;}
+
+function buildCard(u){
+  const isMe=_me&&u.username===_me.username;
+  const isFollowing=_followState[u.username]??u.is_following??false;
+  const initials=(u.username||'?')[0].toUpperCase();
+  const color=avatarColor(u.username||'');
+  return `<div class="user-card fade-in" id="card-${u.username}">
+<div class="user-card-top">
+<div class="user-avatar" style="background:${color};">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentNode.textContent='${initials}'">`:''}${!u.avatar_url?initials:''}</div>
+<div class="user-info">
+<div class="user-name">@${u.username||'—'}</div>
+<div class="user-bio">${u.bio||'No bio yet.'}</div>
+</div>
+</div>
+<div class="user-meta">
+<span class="user-stat"><strong>${u.followers_count||0}</strong> followers</span>
+<span class="user-stat"><strong>${u.following_count||0}</strong> following</span>
+  ${u.projects_count!=null?`<span class="user-stat"><strong>${u.projects_count}</strong> projects</span>`:''}
+</div>
+  ${isMe?`<button class="follow-btn following" disabled style="opacity:.5;cursor:default;">You</button>`:`<button class="follow-btn ${isFollowing?'following':'not-following'}" id="btn-${u.username}" onclick="toggleFollow('${u.username}',this)">${isFollowing?'':`Follow`}</button>`}
+</div>`;
+}
+
+async function toggleFollow(username,btn){
+  const isFollowing=_followState[username]??btn.classList.contains('following');
+  try{
+  const method=isFollowing?'DELETE':'POST';
+  const r=await fetch(`${API}/users/${username}/follow`,{method,headers:authH()});
+  if(!r.ok){const e=await r.json();throw new Error(e.detail||r.status);}
+  _followState[username]=!isFollowing;
+  btn.className=`follow-btn ${!isFollowing?'following':'not-following'}`;
+  if(isFollowing){btn.textContent='Follow';}else{btn.textContent='';}
+  }catch(e){alert(e.message);}
+}
+
+function debouncedSearch(q){
+  clearTimeout(_searchTimer);
+  if(!q.trim()){document.getElementById('results-section').style.display='none';return;}
+  _searchTimer=setTimeout(()=>runSearch(),400);
+}
+
+async function runSearch(){
+  const q=document.getElementById('search-q').value.trim();
+  if(!q)return;
+  const sec=document.getElementById('results-section');
+  const grid=document.getElementById('results-grid');
+  const empty=document.getElementById('results-empty');
+  const label=document.getElementById('results-label');
+  sec.style.display='block';
+  grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">Searching…</div>`;
+  empty.style.display='none';
+  try{
+  const r=await fetch(`${API}/users?q=${encodeURIComponent(q)}&limit=12`,{headers:authH()});
+  if(!r.ok)throw new Error(r.status);
+  const users=await r.json();
+  const list=users.users||users||[];
+  if(label) label.textContent=list.length?`Results for "${q}"`:' ';
+  if(!list.length){grid.innerHTML='';empty.style.display='block';return;}
+  grid.innerHTML=list.map(u=>buildCard(u)).join('');
+  observeFadeIns();
+  }catch(e){grid.innerHTML=`<div style="grid-column:1/-1;color:var(--red);font-size:13px;">Error: ${e.message}</div>`;}
+}
+
+async function loadSuggested(){
+  try{
+  // Get current user
+  const mr=await fetch(`${API}/auth/me`,{headers:authH()});
+  if(mr.ok){_me=await mr.json();const _nu=document.getElementById('nav-username');if(_nu)_nu.textContent=_me.username||'';}
+  const r=await fetch(`${API}/users?limit=6`,{headers:authH()});
+  if(!r.ok)throw new Error(r.status);
+  const d=await r.json();
+  const users=(d.users||d||[]).filter(u=>u.username!==(_me&&_me.username));
+  document.getElementById('suggested-grid').innerHTML=users.length?users.map(u=>buildCard(u)).join(''):`<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-muted);">No users found yet. Be the first!</div>`;
+  observeFadeIns();
+  }catch(e){document.getElementById('suggested-grid').innerHTML=`<div style="grid-column:1/-1;color:var(--red);font-size:13px;">Failed to load users: ${e.message}</div>`;}
+}
+
+function observeFadeIns(){
+  const obs=new IntersectionObserver(entries=>{entries.forEach(en=>{if(en.isIntersecting)en.target.classList.add('visible');});},{threshold:.1});
+  document.querySelectorAll('.fade-in:not(.visible)').forEach(el=>obs.observe(el));
+}
+document.querySelectorAll('.fade-in').forEach(el=>{new IntersectionObserver(ens=>{ens.forEach(en=>{if(en.isIntersecting)en.target.classList.add('visible');});},{threshold:.05}).observe(el);});
+loadSuggested();
+</script>
+<script src="nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Melodyfy — The GitHub for Music</title>
+<style>
+:root{--bg:#07070a;--bg-canvas:#07070a;--bg-overlay:#0e0e12;--bg-inset:#050508;--border:#2e2e34;--border-muted:#1e1e24;--text-primary:#E8E4DC;--text-secondary:#C9C4BA;--text-muted:#7a7a82;--accent:#EDE8DF;--accent-hover:#F0EDE6;--green-btn:#EDE8DF;--green-hover:#F0EDE6;--green-accent:#EDE8DF;--green-bright:#E8E4DC;--blue:#E8E4DC;--orange:#f0883e;--red:#f87171;--purple:#bc8cff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg-canvas);color:var(--text-primary);font-family:'Space Grotesk',sans-serif;line-height:1.5;overflow-x:hidden;}
+h1,h2,h3{font-family:'Archivo Black',sans-serif;color:var(--accent);}
+
+/* ── NAV ─────────────────────────────────────────────────────── */
+.nav-btns{display:flex;gap:8px;align-items:center;}
+.btn-lg{padding:10px 24px;font-size:16px;}
+.btn-xl{padding:12px 32px;font-size:17px;font-weight:600;}
+
+/* ── HERO ────────────────────────────────────────────────────── */
+.hero{padding:80px 24px 60px;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(56,211,83,.12),transparent);pointer-events:none;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(237,232,223,.12);border:1px solid rgba(56,211,83,.25);border-radius:99px;padding:4px 14px;font-size:13px;color:var(--green-accent);margin-bottom:24px;}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;letter-spacing:-1.5px;line-height:1.1;max-width:900px;margin:0 auto 24px;}
+.hero h1 span{background:linear-gradient(135deg,var(--green-accent),var(--green-bright));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:1.2rem;color:var(--text-muted);max-width:600px;margin:0 auto 40px;}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.hero-stats{display:flex;gap:40px;justify-content:center;margin-top:56px;flex-wrap:wrap;}
+.hero-stat{text-align:center;}
+.hero-stat-n{font-size:2rem;font-weight:700;color:var(--green-accent);}
+.hero-stat-l{font-size:13px;color:var(--text-muted);margin-top:2px;}
+
+/* ── GLASS CARD ─────────────────────────────────────────────── */
+.glass{background:rgba(7,7,10,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(237,232,223,.4);box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(237,232,223,.12);border-radius:12px;}@supports not(backdrop-filter:blur(12px)){.glass{background:#0b0b0f;border:1px solid #4A4A55;}}
+
+/* ── COMMIT CHART ────────────────────────────────────────────── */
+.chart-section{padding:48px 24px;max-width:1100px;margin:0 auto;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.section-title{font-size:18px;font-weight:600;color:var(--text-primary);}
+.section-sub{font-size:13px;color:var(--text-muted);}
+.chart-wrap{padding:20px 24px;overflow-x:auto;}
+.contrib-grid{display:flex;gap:3px;align-items:flex-start;}
+.contrib-col{display:flex;flex-direction:column;gap:3px;}
+.contrib-cell{width:11px;height:11px;border-radius:2px;transition:transform .1s;}
+.contrib-cell:hover{transform:scale(1.4);z-index:10;position:relative;}
+.c0{background:var(--bg-overlay);border:1px solid rgba(48,54,61,.5);}
+.c1{background:#0e4429;}
+.c2{background:#006d32;}
+.c3{background:#26a641;}
+.c4{background:#39d353;}
+.chart-legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-top:10px;justify-content:flex-end;}
+.chart-legend-cells{display:flex;gap:3px;}
+.month-labels{display:flex;gap:3px;margin-bottom:4px;padding-left:0;}
+.month-label{font-size:10px;color:var(--text-muted);min-width:11px;}
+
+/* ── FEATURES ────────────────────────────────────────────────── */
+.features{padding:60px 24px;max-width:1100px;margin:0 auto;}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:32px;}
+.feature-card{padding:24px;border-radius:12px;background:var(--bg-overlay);border:1px solid var(--border);transition:transform .2s,border-color .2s;}
+.feature-card:hover{transform:translateY(-3px);border-color:rgba(237,232,223,.4);}
+.feature-icon{font-size:2rem;margin-bottom:16px;display:block;}
+.feature-title{font-size:16px;font-weight:600;margin-bottom:8px;}
+.feature-desc{font-size:14px;color:var(--text-muted);line-height:1.6;}
+
+/* ── HOW IT WORKS ────────────────────────────────────────────── */
+.hiw{padding:60px 24px;max-width:900px;margin:0 auto;text-align:center;}
+.hiw-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px;position:relative;}
+.hiw-steps::before{content:'';position:absolute;top:28px;left:calc(50%/3 + 16px);right:calc(50%/3 + 16px);height:2px;background:linear-gradient(90deg,var(--green-btn),var(--green-accent));opacity:.4;}
+.hiw-step{display:flex;flex-direction:column;align-items:center;gap:12px;}
+.hiw-num{width:56px;height:56px;border-radius:50%;background:rgba(35,134,54,.15);border:2px solid var(--green-btn);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--green-accent);}
+.hiw-step h3{font-size:15px;font-weight:600;}
+.hiw-step p{font-size:13px;color:var(--text-muted);}
+
+/* ── TRENDING SECTION ────────────────────────────────────────── */
+.trending{padding:60px 24px;max-width:1100px;margin:0 auto;}
+.repo-row{display:flex;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--border-muted);transition:background .15s;cursor:pointer;}
+.repo-row:last-child{border:none;}
+.repo-row:hover{background:rgba(177,186,196,.04);margin:0 -12px;padding:16px 12px;border-radius:6px;}
+.repo-rank{font-size:13px;color:var(--text-muted);width:24px;text-align:right;flex-shrink:0;}
+.repo-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green-btn),var(--blue));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.repo-info{flex:1;min-width:0;}
+.repo-name{font-size:14px;font-weight:600;color:var(--blue);text-decoration:none;}
+.repo-name:hover{text-decoration:underline;}
+.repo-desc{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.repo-meta{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--text-muted);flex-shrink:0;}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;background:rgba(237,232,223,.12);border:1px solid rgba(237,232,223,.25);border-radius:99px;font-size:11px;color:var(--green-accent);}
+
+/* ── MODAL ───────────────────────────────────────────────────── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-bg.open{display:flex;}
+.modal{background:var(--bg-overlay);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:420px;position:relative;}
+.modal-close{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1;padding:4px 8px;border-radius:4px;}
+.modal-close:hover{background:rgba(177,186,196,.1);color:var(--text-primary);}
+.modal h2{font-size:18px;font-weight:600;margin-bottom:20px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:6px;}
+.form-group input{width:100%;background:var(--bg-inset);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text-primary);font-size:14px;outline:none;transition:border-color .15s;}
+.form-group input:focus{border-color:var(--blue);}
+.form-status{font-size:13px;min-height:20px;margin-bottom:8px;}
+.form-status.ok{color:var(--green-accent);}
+.form-status.err{color:var(--red);}
+.modal-footer{margin-top:16px;text-align:center;font-size:13px;color:var(--text-muted);}
+.modal-footer a{color:var(--blue);cursor:pointer;text-decoration:none;}
+.modal-footer a:hover{text-decoration:underline;}
+.modal-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-muted);font-size:12px;}
+.modal-divider::before,.modal-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── FOOTER ──────────────────────────────────────────────────── */
+footer{border-top:1px solid var(--border);padding:48px 24px;margin-top:80px;}
+.footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;justify-content:space-between;}
+.footer-brand{display:flex;flex-direction:column;gap:12px;max-width:300px;}
+.footer-brand-logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;}
+.footer-brand p{font-size:12px;color:var(--text-muted);}
+.footer-links h4{font-size:13px;font-weight:600;margin-bottom:12px;}
+.footer-links ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.footer-links a{font-size:13px;color:var(--text-muted);text-decoration:none;}
+.footer-links a:hover{color:var(--text-primary);}
+.footer-bottom{max-width:1100px;margin:32px auto 0;padding-top:16px;border-top:1px solid var(--border-muted);font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+
+/* ── ANIMATIONS ──────────────────────────────────────────────── */
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease;}
+.fade-in.visible{opacity:1;transform:none;}
+
+@media(max-width:768px){
+  .hiw-steps{grid-template-columns:1fr;}.hiw-steps::before{display:none;}
+  
+  .footer-inner{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────────────────── -->
+<div id="nav-root"></div>
+
+<!-- ── HERO ─────────────────────────────────────────────────────────── -->
+<section class="hero">
+<div class="hero-eyebrow">
+<span></span>Now in open beta — join 1,200+ producers
+</div>
+<h1>The<span>GitHub for Music</span><br/>Creation</h1>
+<p class="hero-sub">Generate AI beats, version-control your tracks, collaborate with producers worldwide. Every beat has a commit history.</p>
+<div class="hero-btns">
+<button class="btn btn-green btn-xl" onclick="openModal('register-modal')">Start Creating for Free</button>
+<a class="btn btn-ghost btn-xl" href="explore.html">Browse Beats</a>
+</div>
+<div class="hero-stats fade-in">
+<div class="hero-stat"><div class="hero-stat-n" id="stat-beats">—</div><div class="hero-stat-l">Beats Generated</div></div>
+<div class="hero-stat"><div class="hero-stat-n" id="stat-repos">—</div><div class="hero-stat-l">Repositories</div></div>
+<div class="hero-stat"><div class="hero-stat-n" id="stat-users">—</div><div class="hero-stat-l">Producers</div></div>
+<div class="hero-stat"><div class="hero-stat-n" id="stat-forks">—</div><div class="hero-stat-l">Forks</div></div>
+</div>
+</section>
+
+<!-- ── COMMIT CHART ─────────────────────────────────────────────────── -->
+<div class="chart-section fade-in">
+<div class="glass">
+<div style="padding:20px 24px 12px;">
+<div class="section-header">
+<div>
+<div class="section-title">Platform Activity</div>
+<div class="section-sub">Beat commits over the past year ·<span id="chart-total">—</span> total contributions</div>
+</div>
+<div style="font-size:13px;color:var(--text-muted);">Last 52 weeks</div>
+</div>
+<div id="month-labels" class="contrib-grid" style="gap:3px;margin-bottom:4px;padding-left:0;"></div>
+<div id="contrib-chart" class="contrib-grid"></div>
+<div class="chart-legend">Less
+<div class="chart-legend-cells">
+<div class="contrib-cell c0"></div>
+<div class="contrib-cell c1"></div>
+<div class="contrib-cell c2"></div>
+<div class="contrib-cell c3"></div>
+<div class="contrib-cell c4"></div>
+</div>More
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── FEATURES ─────────────────────────────────────────────────────── -->
+<section class="features fade-in">
+<div class="section-header" style="margin-bottom:8px;">
+<div class="section-title">Everything you need to create</div>
+</div>
+<p style="color:var(--text-muted);font-size:14px;">Melodyfy combines AI music generation with Git-style version control.</p>
+<div class="features-grid" style="margin-top:28px;">
+<div class="feature-card">
+<span class="feature-icon"></span>
+<div class="feature-title">AI Beat Generation</div>
+<div class="feature-desc">Describe your vibe in plain English. MusicGen creates studio-quality beats in seconds, running on GPU for lightning speed.</div>
+</div>
+<div class="feature-card">
+<span class="feature-icon"></span>
+<div class="feature-title">Version Control for Audio</div>
+<div class="feature-desc">Every beat is a commit. Branch, fork, and diff audio like code. See exactly how a track evolved over time.</div>
+</div>
+<div class="feature-card">
+<span class="feature-icon"></span>
+<div class="feature-title">Stem Separation</div>
+<div class="feature-desc">DEMUCS splits any beat into drums, bass, vocals, and other. Edit individual stems or remix them independently.</div>
+</div>
+<div class="feature-card">
+<span class="feature-icon"></span>
+<div class="feature-title">Hum to Beat</div>
+<div class="feature-desc">Record a melody, whistle a tune — Melodyfy turns your humming into a full produced beat with matching harmony.</div>
+</div>
+<div class="feature-card">
+<span class="feature-icon">⭐</span>
+<div class="feature-title">Social & Discovery</div>
+<div class="feature-desc">Star repositories, follow producers, fork their beats. Explore trending creations sorted by stars, plays, and mood.</div>
+</div>
+<div class="feature-card">
+<span class="feature-icon"></span>
+<div class="feature-title">AI Mastering</div>
+<div class="feature-desc">One-click professional mastering. Our AI analyzes loudness, dynamics, and tone to give your track a commercial polish.</div>
+</div>
+</div>
+</section>
+
+<!-- ── HOW IT WORKS ──────────────────────────────────────────────────── -->
+<section class="hiw fade-in">
+<div class="section-title" style="font-size:22px;">How it works</div>
+<p style="color:var(--text-muted);font-size:14px;margin-top:8px;">Create, version, collaborate — in three steps</p>
+<div class="hiw-steps">
+<div class="hiw-step">
+<div class="hiw-num">1</div>
+<h3>Describe your beat</h3>
+<p>Type a text prompt like "lofi hip hop 90 BPM chill" and hit Generate. The AI does the rest.</p>
+</div>
+<div class="hiw-step">
+<div class="hiw-num">2</div>
+<h3>Commit & branch</h3>
+<p>Save your beat as a commit in a repository. Branch off to explore variations without losing the original.</p>
+</div>
+<div class="hiw-step">
+<div class="hiw-num">3</div>
+<h3>Share & collaborate</h3>
+<p>Make your repo public, let others fork it, and follow producers whose style inspires you.</p>
+</div>
+</div>
+</section>
+
+<!-- ── TRENDING REPOS ─────────────────────────────────────────────────── -->
+<section class="trending fade-in">
+<div class="section-header">
+<div>
+<div class="section-title">Trending this week</div>
+<div class="section-sub">Most starred repositories</div>
+</div>
+<a href="explore.html" class="btn btn-ghost" style="font-size:13px;">See all →</a>
+</div>
+<div class="glass" style="padding:0 16px;" id="trending-list">
+<div style="padding:32px;text-align:center;color:var(--text-muted);">Loading…</div>
+</div>
+</section>
+
+<!-- ── CTA BAND ──────────────────────────────────────────────────────── -->
+<section style="padding:72px 24px;text-align:center;" class="fade-in">
+<div class="glass" style="max-width:700px;margin:0 auto;padding:48px 32px;">
+<div style="font-size:2rem;margin-bottom:16px;"></div>
+<h2 style="font-size:1.75rem;font-weight:700;margin-bottom:12px;">Ready to ship your first beat?</h2>
+<p style="color:var(--text-muted);margin-bottom:28px;">Free forever for public repositories. No credit card required.</p>
+<button class="btn btn-green btn-xl" onclick="openModal('register-modal')">Create your account</button>
+</div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────── -->
+<footer>
+<div class="footer-inner">
+<div class="footer-brand">
+<div class="footer-brand-logo">Melodyfy</div>
+<p>The open platform for AI-powered music creation and collaboration. Every beat has a story — version it.</p>
+</div>
+<div class="footer-links">
+<h4>Product</h4>
+<ul>
+<li><a href="studio.html">Studio</a></li>
+<li><a href="explore.html">Explore</a></li>
+<li><a href="library.html">Library</a></li>
+</ul>
+</div>
+<div class="footer-links">
+<h4>Community</h4>
+<ul>
+<li><a href="community.html">Producers</a></li>
+<li><a href="explore.html">Trending Beats</a></li>
+</ul>
+</div>
+<div class="footer-links">
+<h4>Account</h4>
+<ul>
+<li><a href="#" onclick="openModal('signin-modal')">Sign in</a></li>
+<li><a href="#" onclick="openModal('register-modal')">Register</a></li>
+<li><a href="settings.html">Settings</a></li>
+</ul>
+</div>
+</div>
+<div class="footer-bottom">
+<span>© 2026 Melodyfy · Built with MusicGen + FastAPI</span>
+<span>Powered by NVIDIA CUDA</span>
+</div>
+</footer>
+
+<!-- ── SIGN IN MODAL ────────────────────────────────────────────────── -->
+<div class="modal-bg" id="signin-modal" onclick="bgClose(event,'signin-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+<button class="modal-close" onclick="closeModal('signin-modal')">✕</button>
+<h2>Sign in to Melodyfy</h2>
+<div class="form-status" id="signin-status"></div>
+<div class="form-group">
+<label>Email or Username</label>
+<input type="text" id="signin-email" placeholder="you@example.com or username" autocomplete="username"/>
+</div>
+<div class="form-group">
+<label>Password</label>
+<input type="password" id="signin-pass" placeholder="Your password" autocomplete="current-password"
+  onkeydown="if(event.key==='Enter')doSignIn()"/>
+</div>
+<button class="btn btn-green" style="width:100%;" onclick="doSignIn()">Sign in</button>
+<div class="modal-footer">Don't have an account?<a onclick="switchModal('signin-modal','register-modal')">Register here</a>
+</div>
+</div>
+</div>
+
+<!-- ── REGISTER MODAL ───────────────────────────────────────────────── -->
+<div class="modal-bg" id="register-modal" onclick="bgClose(event,'register-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+<button class="modal-close" onclick="closeModal('register-modal')">✕</button>
+<h2>Create your account</h2>
+<div class="form-status" id="reg-status"></div>
+<div class="form-group">
+<label>Username</label>
+<input type="text" id="reg-user" placeholder="your_username" autocomplete="username"/>
+</div>
+<div class="form-group">
+<label>Email address</label>
+<input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email"/>
+</div>
+<div class="form-group">
+<label>Password</label>
+<input type="password" id="reg-pass" placeholder="Min 8 characters" autocomplete="new-password"
+  onkeydown="if(event.key==='Enter')doRegister()"/>
+</div>
+<button class="btn btn-green" style="width:100%;" onclick="doRegister()">Create account</button>
+<div class="modal-footer">Already have an account?<a onclick="switchModal('register-modal','signin-modal')">Sign in</a>
+</div>
+</div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+/* ── Auth helpers ─────────────────────────────────────────────── */
+function getToken(){ return localStorage.getItem('bf_token'); }
+function setAuth(token,user){ localStorage.setItem('bf_token',token); localStorage.setItem('bf_user',JSON.stringify(user)); }
+function authHeaders(){ return {'Content-Type':'application/json','Authorization':`Bearer ${getToken()}`}; }
+
+/* If already logged in, update nav */
+(function(){
+  const t = getToken();
+  if(!t) return;
+  try{
+  const p = JSON.parse(atob(t.split('.')[1]));
+  if(p.exp && p.exp< Date.now()/1000){ localStorage.removeItem('bf_token'); return; }
+  const btns = document.querySelector('.nav-btns');
+  if (btns) {
+    btns.innerHTML = `
+<a href="dashboard.html" class="btn btn-ghost">Dashboard</a>
+<a href="studio.html" class="btn btn-green">Studio</a>`;
+  }
+  }catch(e){}
+})();
+
+/* ── Modal helpers ────────────────────────────────────────────── */
+function openModal(id){ const el = document.getElementById(id); if(el) el.classList.add('open'); }
+function closeModal(id){ const el = document.getElementById(id); if(el) el.classList.remove('open'); }
+function bgClose(e,id){ if(e.target===document.getElementById(id)) closeModal(id); }
+function switchModal(from,to){ closeModal(from); openModal(to); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open')); });
+
+/* Open modal if URL query param exists */
+(function(){
+  const params = new URLSearchParams(location.search);
+  const auth = params.get('auth');
+  if (auth === 'signin') openModal('signin-modal');
+  else if (auth === 'register') openModal('register-modal');
+})();
+
+/* ── Sign in ──────────────────────────────────────────────────── */
+async function doSignIn(){
+  const email=document.getElementById('signin-email').value.trim();
+  const pass=document.getElementById('signin-pass').value;
+  const st=document.getElementById('signin-status');
+  st.className='form-status';st.textContent='Signing in…';
+  try{
+  const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+  const d=await r.json();
+  if(!r.ok) throw new Error(d.detail||'Login failed');
+  setAuth(d.token, d.user);
+  st.className='form-status ok';st.textContent='✓ Signed in! Redirecting…';
+  setTimeout(()=>location.href='dashboard.html',800);
+  }catch(e){ st.className='form-status err';st.textContent='✗ '+e.message; }
+}
+
+/* ── Register ─────────────────────────────────────────────────── */
+async function doRegister(){
+  const username=document.getElementById('reg-user').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const password=document.getElementById('reg-pass').value;
+  const st=document.getElementById('reg-status');
+  st.className='form-status';st.textContent='Creating account…';
+  try{
+  const r=await fetch(`${API}/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password})});
+  const d=await r.json();
+  if(!r.ok) throw new Error(d.detail||'Registration failed');
+  // register endpoint already returns token + user — no second login needed
+  setAuth(d.token, d.user);
+  st.className='form-status ok';st.textContent='✓ Account created! Redirecting…';
+  setTimeout(()=>location.href='dashboard.html',800);
+  }catch(e){ st.className='form-status err';st.textContent='✗ '+e.message; }
+}
+
+/* ── Commit chart ─────────────────────────────────────────────── */
+function buildChart(data){
+  // data: array of 364 integers (52 weeks × 7 days), index 0 = oldest
+  const total = data.reduce((a,b)=>a+b,0);
+  document.getElementById('chart-total').textContent = total.toLocaleString();
+
+  // month labels
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const labelWrap = document.getElementById('month-labels');
+  labelWrap.innerHTML='';
+  // one label per ~4 weeks
+  const now = new Date(); let cur = new Date(now); cur.setDate(cur.getDate()-363);
+  let lastMonth=-1;
+  for(let w=0;w<52;w++){
+  const d=new Date(cur); d.setDate(d.getDate()+w*7);
+  const m=d.getMonth();
+  const col=document.createElement('div');
+  col.style.cssText='display:flex;flex-direction:column;width:11px;';
+  const label=document.createElement('div');
+  label.style.cssText='font-size:10px;color:var(--text-muted);min-width:11px;height:14px;';
+  if(m!==lastMonth){ label.textContent=months[m]; lastMonth=m; }
+  col.appendChild(label);
+  labelWrap.appendChild(col);
+  }
+
+  const grid = document.getElementById('contrib-chart');
+  grid.innerHTML='';
+  for(let w=0;w<52;w++){
+  const col=document.createElement('div');
+  col.className='contrib-col';
+  for(let d=0;d<7;d++){
+  const val=data[w*7+d]||0;
+  const cell=document.createElement('div');
+  cell.className='contrib-cell '+(val===0?'c0':val<=3?'c1':val<=6?'c2':val<=9?'c3':'c4');
+  cell.title=`${val} contributions`;
+  col.appendChild(cell);
+  }
+  grid.appendChild(col);
+  }
+}
+
+async function loadChart(){
+  // Try to get real data from trending repos
+  try{
+  const r=await fetch(`${API}/projects/search?sort=popular&limit=50`);
+  if(!r.ok) throw new Error('no data');
+  const d=await r.json();
+  // Use created_at of repos to build approximate activity
+  const counts=new Array(364).fill(0);
+  const now=Date.now();
+  (d.repositories||d||[]).forEach(repo=>{
+  if(repo.created_at){
+  const daysAgo=Math.floor((now-new Date(repo.created_at))/86400000);
+  if(daysAgo>=0&&daysAgo<364) counts[363-daysAgo]++;
+  }
+  });
+  // if mostly zeroes, supplement with seeded data
+  const hasReal=counts.some(c=>c>0);
+  if(!hasReal) throw new Error('empty');
+  buildChart(counts);
+  }catch{
+  // seeded demo data
+  const seed=data=>{ let s=data; return()=>{ s=Math.sin(s)*10000;return Math.abs(s-Math.floor(s)); }; };
+  const rng=seed(42);
+  const counts=Array.from({length:364},(_,i)=>{
+  const wave=Math.sin(i/28)*3+3;
+  return Math.max(0,Math.round(wave+rng()*8-2));
+  });
+  buildChart(counts);
+  }
+}
+loadChart();
+
+/* ── Trending repos ───────────────────────────────────────────── */
+async function loadTrending(){
+  try{
+  const r=await fetch(`${API}/projects/search?sort=popular&limit=8`);
+  const d=await r.json();
+  const repos=d.repositories||d||[];
+  const el=document.getElementById('trending-list');
+  if(!repos.length){ el.innerHTML='<div style="padding:24px;text-align:center;color:var(--text-muted);">No public repositories yet.</div>'; return; }
+  el.innerHTML=repos.map((repo,i)=>`
+<div class="repo-row" onclick="location.href='project_tree.html?project=${repo.id}'">
+<span class="repo-rank">${i+1}</span>
+<div class="repo-avatar">${(repo.owner||{username:'?'}).username[0].toUpperCase()}</div>
+<div class="repo-info">
+<a class="repo-name" href="project_tree.html?project=${repo.id}" onclick="event.stopPropagation()">${(repo.owner||{username:'?'}).username}/<strong>${repo.name}</strong></a>
+<div class="repo-desc">${repo.description||'No description'}</div>
+</div>
+<div class="repo-meta">
+  ${repo.mood?`<span class="tag">${repo.mood}</span>`:''}
+<span>⭐ ${repo.star_count||0}</span>
+<span>▶ ${repo.play_count||0}</span>
+</div>
+</div>`).join('');
+  }catch(e){
+  document.getElementById('trending-list').innerHTML='<div style="padding:24px;text-align:center;color:var(--text-muted);">Could not load repositories.</div>';
+  }
+}
+loadTrending();
+
+/* ── Platform stats ───────────────────────────────────────────── */
+async function loadStats(){
+  try{
+  const r=await fetch(`${API}/projects/search?sort=popular&limit=100`);
+  if(!r.ok) return;
+  const d=await r.json();
+  const repos=d.repositories||d||[];
+  const stars=repos.reduce((a,r)=>a+(r.star_count||0),0);
+  const plays=repos.reduce((a,r)=>a+(r.play_count||0),0);
+  const commits=repos.reduce((a,r)=>a+(r.commit_count||0),0);
+  document.getElementById('stat-repos').textContent=repos.length;
+  document.getElementById('stat-beats').textContent=commits||repos.length*3||'—';
+  document.getElementById('stat-users').textContent='—';
+  document.getElementById('stat-forks').textContent=stars||'—';
+  }catch{}
+}
+loadStats();
+
+/* ── Scroll animations ────────────────────────────────────────── */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+},{threshold:0.1});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+</script>
+<script src="nav.js"></script>
+</body>
+</html>

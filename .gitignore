@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env
+*.log
+*.sqlite3
+*.db
+instance/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Build / dist
+dist/
+build/
+*.egg-info/
+
+# Secrets
+secrets.txt
+
+# Large model / audio files
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.onnx
+sounds/
+
+# Runtime audio output (generated files — not source code)
+stems_outputs/
+beat_outputs/
+uploads/
+*.wav
+*.mp3
+*.flac
+*.ogg
+
+# Server output log
+server_out.txt

@@ -1,0 +1,260 @@
+# MusicGen Testing - Quick Reference Card
+
+## 🚀 Getting Started (2 minutes)
+
+```bash
+# 1. Install
+pip install -r musicgen_requirements.txt
+
+# 2. Test model loads
+python test_musicgen_01_load_model.py
+
+# 3. Generate music
+python test_musicgen_02_generate_simple.py
+
+# 4. Listen
+# Open: musicgen_test_outputs/test_gen_01.wav
+```
+
+---
+
+## 📋 All Tests at a Glance
+
+| Run This | Time | What It Does | Output |
+|----------|------|-----------|--------|
+| `python test_musicgen_01_load_model.py` | 2-5 min | Check if model loads | Console info |
+| `python test_musicgen_02_generate_simple.py` | 5-10 min | Generate 5 songs | 5 WAV files |
+| `python test_musicgen_03_parameter_testing.py` | 10-15 min | Duration + creativity | 12 WAV files |
+| `python test_musicgen_04_batch_generation.py` | 10 min | Speed test batches | 7 WAV files |
+| `python test_musicgen_05_performance_monitoring.py` | 5-10 min | CPU/GPU usage | 2 WAV files + stats |
+| `python test_musicgen_06_model_variants.py` | 15-30 min | Small vs Medium vs Large | 3 WAV files + comparison |
+| `python test_musicgen_07_audio_quality_analysis.py` | 5 min | Audio quality metrics | 1 WAV + BPM/spectral data |
+
+---
+
+## 💾 Output Locations
+
+```
+musicgen_test_outputs/
+├── test_gen_01.wav to test_gen_05.wav
+├── perf_test_01.wav, perf_test_02.wav
+├── quality_test.wav
+│
+├── parameter_tests/
+│   ├── duration_4.0s.wav, 8.0s, 16.0s, 30.0s
+│   ├── temperature_0.5.wav, 0.7, 1.0, 1.5
+│   └── top_p_0.7.wav, 0.8, 0.9, 1.0
+│
+├── batch_tests/
+│   ├── batch_01_sample_1.wav
+│   ├── batch_02_sample_1.wav, sample_2.wav
+│   └── batch_04_sample_1.wav to sample_4.wav
+│
+└── variants/
+    ├── variant_small.wav
+    ├── variant_medium.wav
+    └── variant_large.wav
+```
+
+---
+
+## 🎛️ Model Parameters
+
+### Duration
+```python
+model.set_generation_params(duration=8.0)  # seconds
+# Typical: 4.0, 8.0, 16.0, 30.0
+# Longer = more time to develop musically
+```
+
+### Temperature (Creativity)
+```python
+model.generation_params['temperature'] = 1.0
+# 0.5 = Predictable, safe
+# 1.0 = Balanced
+# 1.5 = Creative, chaotic
+```
+
+### Top-P (Diversity)
+```python
+model.generation_params['top_p'] = 0.9
+# 0.7 = Coherent, focused
+# 0.9 = Varied but coherent
+# 1.0 = Most diverse
+```
+
+---
+
+## 🔍 What to Listen For
+
+### Good Quality Signs
+✓ Clear structure (intro, middle, outro)
+✓ Consistent tempo/rhythm
+✓ Coherent instrumentation
+✓ No artifacts or glitches
+✓ Appropriate for genre
+
+### Issues to Note
+✗ Repetitive sections
+✗ Temporal artifacts
+✗ Sudden key changes
+✗ Distorted audio
+✗ Genre mismatch
+
+---
+
+## 💻 Hardware Expected
+
+### RTX 5050 (2.5 GB VRAM)
+```
+Small model:    1.2 GB VRAM, ~30s for 8s audio
+Medium model:   3.0 GB VRAM, ~60s for 8s audio  ← RECOMMENDED
+Large model:    6.0 GB VRAM, ✗ TOO MUCH
+```
+
+### CPU Only (Fallback)
+```
+Time: ~5-15 minutes per 8 seconds
+Memory: ~6-8 GB RAM
+Use: Development/testing only
+```
+
+---
+
+## 📊 Performance Checklist
+
+After each test, mark these:
+
+- [ ] Model loads in < 10 seconds
+- [ ] Generation produces valid WAV files
+- [ ] Audio is listenable (no static/artifacts)
+- [ ] GPU memory stays < 4 GB
+- [ ] Generation time < 2 minutes for 8s audio
+- [ ] All test outputs are unique
+- [ ] BPM detection works (80-160 range)
+
+---
+
+## 🐛 Troubleshooting Quick Fixes
+
+| Error | Fix |
+|-------|-----|
+| `No module named 'audiocraft'` | `pip install audiocraft` |
+| `CUDA out of memory` | Use `'small'` instead of `'medium'` |
+| `Model download fails` | Check internet connection |
+| `torch.cuda.is_available() = False` | Install GPU drivers + CUDA |
+| `Very slow generation` | Normal on CPU; consider GPU |
+
+---
+
+## 📝 Example Prompts to Try
+
+```python
+# Electronic
+"upbeat electronic dance music with synthesizers"
+"techno house with heavy bass"
+"minimal ambient electronic"
+
+# Acoustic
+"calm folk guitar acoustic"
+"peaceful piano classical music"
+
+# Experimental
+"experimental glitch music with breaks"
+"psychedelic trip-hop beat"
+
+# Popular
+"pop song with catchy hooks"
+"smooth R&B with vocals"
+```
+
+---
+
+## 📈 Next Model to Test
+
+After MusicGen is working:
+
+### DEMUCS (Stem Separation)
+```python
+from audiocraft.models import Demucs
+
+model = Demucs.get_model('htdemucs')
+stems = model.separate(audio)
+# Returns: drums, bass, vocals, melody, other
+```
+
+### LIBROSA (Audio Analysis)
+```python
+import librosa
+
+# BPM detection
+tempo = librosa.beat.tempo(y=audio, sr=sr)
+
+# Key detection
+chroma = librosa.feature.chroma_cqt(y=audio, sr=sr)
+```
+
+---
+
+## 🎯 Success Criteria
+
+Run this to check everything:
+```bash
+python test_musicgen_01_load_model.py
+```
+
+You should see:
+```
+Device: CUDA or CPU ✓
+Model: MusicGen ✓
+Status: Ready for generation ✓
+```
+
+Then:
+```bash
+python test_musicgen_02_generate_simple.py
+```
+
+You should see:
+```
+5 WAV files created ✓
+All generated in < 60 seconds ✓
+Files in musicgen_test_outputs/ ✓
+```
+
+---
+
+## 📞 Common Questions
+
+**Q: Why is it so slow on my machine?**
+- A: GPU acceleration not available. Install CUDA drivers.
+
+**Q: The audio sounds weird/glitchy**
+- A: Temperature too high. Try 0.7 or 0.8 instead of 1.0+
+
+**Q: How much bigger is large vs medium?**
+- A: Large = 2-3x more parameters = 2-3x slower = 2-3x better quality
+
+**Q: Can I use this in production?**
+- A: Yes! This is exactly how FastAPI backend will use it.
+
+---
+
+## 🚀 When You're Ready
+
+After all tests pass, you'll have:
+- ✅ MusicGen validated
+- ✅ Performance baseline
+- ✅ Test data (audio samples)
+- ✅ Understanding of parameters
+
+**Then move to:** `test_demucs_*.py` scripts
+
+---
+
+**Status: Ready to Test MusicGen!**
+```bash
+python test_musicgen_01_load_model.py
+```
+
+Go! 🎵

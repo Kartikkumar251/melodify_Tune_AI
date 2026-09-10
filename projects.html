@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Projects — Melodyfy</title>
+<script>
+(function(){const t=localStorage.getItem('bf_token');if(!t){location.href='index.html';return;}try{const p=JSON.parse(atob(t.split('.')[1]));if(p.exp&&p.exp<Date.now()/1000){localStorage.removeItem('bf_token');location.href='index.html';}}catch(e){localStorage.removeItem('bf_token');location.href='index.html';}})();
+</script>
+<style>
+:root{--bg:#07070a;--bg-canvas:#07070a;--bg-overlay:#0e0e12;--bg-inset:#050508;--border:#2e2e34;--border-muted:#1e1e24;--text-primary:#E8E4DC;--text-secondary:#C9C4BA;--text-muted:#7a7a82;--accent:#EDE8DF;--accent-hover:#F0EDE6;--green-btn:#EDE8DF;--green-hover:#F0EDE6;--green-accent:#EDE8DF;--green-bright:#E8E4DC;--blue:#E8E4DC;--orange:#f0883e;--red:#f87171;--purple:#bc8cff;}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--bg-canvas);color:var(--text-primary);font-family:'Space Grotesk',sans-serif;line-height:1.5;}
+h1,h2,h3{font-family:'Archivo Black',sans-serif;color:var(--accent);}
+.btn-red{background:rgba(248,81,73,.15);border-color:rgba(248,81,73,.3);color:var(--red);}
+.btn-red:hover{background:rgba(248,81,73,.25);}
+.glass{background:rgba(7,7,10,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(237,232,223,.4);box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(237,232,223,.12);border-radius:12px;}@supports not(backdrop-filter:blur(12px)){.glass{background:#0b0b0f;border:1px solid #4A4A55;}}
+.page{max-width:1100px;margin:0 auto;padding:32px 24px;}
+.top-bar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap;}
+.top-bar h1{font-size:1.4rem;font-weight:700;flex:1;}
+input,select,textarea{background:var(--bg-inset);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text-primary);font-size:14px;outline:none;transition:border-color .15s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);}
+select option{background:var(--bg-overlay);}
+/* Repo list */
+.repo-row{display:flex;align-items:flex-start;gap:12px;padding:20px 0;border-bottom:1px solid var(--border-muted);}
+.repo-row:last-child{border:none;}
+.repo-row-icon{font-size:20px;flex-shrink:0;margin-top:2px;}
+.repo-row-body{flex:1;min-width:0;}
+.repo-row-name{font-size:16px;font-weight:600;color:var(--blue);text-decoration:none;cursor:pointer;}
+.repo-row-name:hover{text-decoration:underline;}
+.repo-row-desc{font-size:13px;color:var(--text-muted);margin-top:4px;margin-bottom:10px;}
+.repo-row-meta{display:flex;gap:14px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;align-items:center;}
+.tag{display:inline-flex;padding:2px 8px;background:rgba(237,232,223,.12);border:1px solid rgba(237,232,223,.25);border-radius:99px;font-size:11px;color:var(--green-accent);}
+.tag-blue{background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.2);color:var(--blue);}
+.tag-orange{background:rgba(240,136,62,.1);border-color:rgba(240,136,62,.2);color:var(--orange);}
+.repo-row-actions{display:flex;gap:6px;flex-shrink:0;margin-top:4px;}
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-bg.open{display:flex;}
+.modal{background:var(--bg-overlay);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:480px;position:relative;}
+.modal-close{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;padding:4px 8px;border-radius:4px;}
+.modal-close:hover{background:rgba(177,186,196,.1);}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:6px;}
+.toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:10px 0;}
+.toggle{position:relative;width:40px;height:22px;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--bg-inset);border:1px solid var(--border);border-radius:99px;cursor:pointer;transition:.3s;}
+.toggle input:checked+.toggle-slider{background:var(--green-btn);border-color:var(--green-btn);}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px);}
+.status{font-size:13px;padding:8px 12px;border-radius:6px;margin-top:8px;display:none;}
+.status.ok{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);color:var(--green-accent);}
+.status.err{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);color:var(--red);}
+.fade-in{opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease;}
+.fade-in.visible{opacity:1;transform:none;}
+@media(max-width:768px){.repo-row{flex-direction:column;}.repo-row-actions{width:100%;}}
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+
+<main class="page">
+<div class="top-bar">
+<h1>Your Repositories</h1>
+<input type="search" id="proj-search" placeholder="Find a repository…" oninput="filterRepos(this.value)" style="width:200px;"/>
+<select id="proj-sort" onchange="sortRepos(this.value)">
+<option value="updated">Last updated</option>
+<option value="name">Name</option>
+<option value="stars">Stars</option>
+</select>
+</div>
+
+<div class="glass" style="padding:0 20px;" id="repos-list">
+<div style="padding:40px;text-align:center;color:var(--text-muted);">Loading your repositories…</div>
+</div>
+</main>
+
+<!-- New Project Modal -->
+<div class="modal-bg" id="new-proj-modal" onclick="bgClose(event,'new-proj-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+<button class="modal-close" onclick="closeModal('new-proj-modal')">✕</button>
+<h2 style="font-size:18px;font-weight:600;margin-bottom:20px;">Create a new repository</h2>
+<div class="form-group">
+<label>Repository name<span style="color:var(--red)">*</span></label>
+<input type="text" id="np-name" placeholder="my-awesome-beat"/>
+</div>
+<div class="form-group">
+<label>Description (optional)</label>
+<textarea id="np-desc" placeholder="A short description of this project…" rows="2" style="width:100%;"></textarea>
+</div>
+<div class="form-group">
+<label>Mood / Genre</label>
+<select id="np-mood" style="width:100%;">
+<option value="">None</option>
+<option value="EDM / Club Banger">EDM / Club Banger</option>
+<option value="Trap / Hip-Hop">Trap / Hip-Hop</option>
+<option value="Lo-fi Chill">Lo-fi Chill</option>
+<option value="Synthwave">Synthwave</option>
+<option value="Deep House">Deep House</option>
+<option value="Drum and Bass">Drum and Bass</option>
+<option value="Ambient">Ambient</option>
+<option value="Phonk">Phonk</option>
+<option value="Calm Piano">Calm Piano</option>
+<option value="Acoustic Guitar">Acoustic Guitar</option>
+<option value="Jazz">Jazz</option>
+<option value="Blues">Blues</option>
+<option value="Orchestral">Orchestral</option>
+<option value="R&amp;B / Soul">R&amp;B / Soul</option>
+<option value="Epic Cinematic">Epic Cinematic</option>
+<option value="Metal">Metal</option>
+<option value="Indie Rock">Indie Rock</option>
+<option value="Afrobeats">Afrobeats</option>
+<option value="Meditation">Meditation</option>
+<option value="Nature Sounds">Nature Sounds</option>
+<option value="Sleep Drone">Sleep Drone</option>
+<option value="Bossa Nova">Bossa Nova</option>
+<option value="8-Bit Game">8-Bit Game</option>
+<option value="Middle Eastern">Middle Eastern</option>
+</select>
+</div>
+<div class="toggle-wrap">
+<div>
+<div style="font-size:14px;font-weight:500;">Public repository</div>
+<div style="font-size:12px;color:var(--text-muted);">Anyone can see this repository</div>
+</div>
+<label class="toggle"><input type="checkbox" id="np-public" checked/><span class="toggle-slider"></span></label>
+</div>
+<div class="status" id="new-proj-status"></div>
+<button class="btn btn-green" style="width:100%;margin-top:16px;" onclick="createProject()">Create repository</button>
+</div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-bg" id="edit-proj-modal" onclick="bgClose(event,'edit-proj-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+<button class="modal-close" onclick="closeModal('edit-proj-modal')">✕</button>
+<h2 style="font-size:18px;font-weight:600;margin-bottom:20px;">Edit Repository</h2>
+<input type="hidden" id="edit-repo-id"/>
+<div class="form-group">
+<label>Name</label>
+<input type="text" id="edit-name" style="width:100%;"/>
+</div>
+<div class="form-group">
+<label>Description</label>
+<textarea id="edit-desc" rows="2" style="width:100%;"></textarea>
+</div>
+<div class="toggle-wrap">
+<div>
+<div style="font-size:14px;font-weight:500;">Public</div>
+</div>
+<label class="toggle"><input type="checkbox" id="edit-public"/><span class="toggle-slider"></span></label>
+</div>
+<div class="status" id="edit-status"></div>
+<button class="btn btn-green" style="width:100%;margin-top:16px;" onclick="saveEdit()">Save changes</button>
+</div>
+</div>
+
+<script>
+const API='http://localhost:8000';
+const token=localStorage.getItem('bf_token');
+const headers={'Authorization':`Bearer ${token}`,'Content-Type':'application/json'};
+let _allRepos=[];
+
+function signOut(){localStorage.removeItem('bf_token');localStorage.removeItem('bf_user');location.href='index.html';}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function bgClose(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+function timeAgo(ts){if(!ts)return '';const s=Math.floor((Date.now()-new Date(ts))/1000);if(s<60)return `${s}s ago`;if(s<3600)return `${Math.floor(s/60)}m ago`;if(s<86400)return `${Math.floor(s/3600)}h ago`;return `${Math.floor(s/86400)}d ago`;}
+
+function renderRepos(repos){
+  const el=document.getElementById('repos-list');
+  if(!repos.length){
+  el.innerHTML='<div style="padding:48px;text-align:center;color:var(--text-muted);"><div style="font-size:2rem;margin-bottom:12px;"></div><div style="font-size:16px;font-weight:600;margin-bottom:8px;">No repositories yet</div><div style="margin-bottom:20px;">Create your first repository to start versioning your beats.</div><button class="btn btn-green" onclick="openModal(\'new-proj-modal\')">+ New Repository</button></div>';
+  return;
+  }
+  el.innerHTML=repos.map(r=>`
+<div class="repo-row fade-in">
+<div class="repo-row-icon">${r.forked_from?'':''}</div>
+<div class="repo-row-body">
+<a class="repo-row-name" href="repo.html?id=${r.id}">${r.name}</a>
+<div class="repo-row-desc">${r.description||'<em style="color:var(--text-muted)">No description</em>'}</div>
+<div class="repo-row-meta">
+  ${r.is_public?'<span class="tag tag-blue">public</span>':'<span class="tag tag-orange">private</span>'}
+  ${r.mood?`<span class="tag">${r.mood}</span>`:''}
+<span>⭐ ${r.star_count||0}</span>
+<span>▶ ${r.play_count||0}</span>
+<span> ${r.commit_count||0} commits</span>
+  ${r.updated_at?`<span>Updated ${timeAgo(r.updated_at)}</span>`:''}
+</div>
+</div>
+<div class="repo-row-actions">
+<a href="repo.html?id=${r.id}" class="btn btn-ghost" style="font-size:12px;padding:3px 10px;">View</a>
+<a href="project_tree.html?project=${r.id}" class="btn btn-ghost" style="font-size:12px;padding:3px 10px;">Tree</a>
+<button class="btn btn-ghost" style="font-size:12px;padding:3px 10px;" onclick="openEdit('${r.id}','${r.name.replace(/'/g,'&#39;')}','${(r.description||'').replace(/'/g,'&#39;')}',${r.is_public})">Edit</button>
+</div>
+</div>`).join('');
+  document.querySelectorAll('.repo-row.fade-in').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*40));
+}
+
+function filterRepos(q){
+  const filtered=_allRepos.filter(r=>r.name.toLowerCase().includes(q.toLowerCase())||(r.description||'').toLowerCase().includes(q.toLowerCase()));
+  renderRepos(filtered);
+}
+
+function sortRepos(by){
+  const sorted=[..._allRepos].sort((a,b)=>{
+  if(by==='name') return a.name.localeCompare(b.name);
+  if(by==='stars') return (b.star_count||0)-(a.star_count||0);
+  return new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at);
+  });
+  renderRepos(sorted);
+}
+
+async function loadRepos(){
+  try{
+  const r=await fetch(`${API}/projects`,{headers});
+  const d=await r.json();
+  _allRepos=d.repositories||d||[];
+  sortRepos('updated');
+  }catch(e){document.getElementById('repos-list').innerHTML=`<div style="padding:32px;color:var(--red);">Error: ${e.message}</div>`;}
+}
+loadRepos();
+
+async function createProject(){
+  const name=document.getElementById('np-name').value.trim();
+  if(!name){alert('Repository name is required.');return;}
+  const desc=document.getElementById('np-desc').value.trim();
+  const mood=document.getElementById('np-mood').value;
+  const is_public=document.getElementById('np-public').checked;
+  const st=document.getElementById('new-proj-status');
+  st.style.display='block'; st.className='status'; st.textContent='Creating…';
+  try{
+  const r=await fetch(`${API}/projects`,{method:'POST',headers,body:JSON.stringify({name,description:desc,mood:mood||undefined,is_public})});
+  const d=await r.json();
+  if(!r.ok) throw new Error(d.detail||'Failed');
+  st.className='status ok'; st.textContent='✓ Repository created!';
+  setTimeout(()=>{closeModal('new-proj-modal');loadRepos();st.style.display='none';document.getElementById('np-name').value='';},1000);
+  }catch(e){st.className='status err';st.textContent='✗ '+e.message;}
+}
+
+function openEdit(id,name,desc,isPublic){
+  document.getElementById('edit-repo-id').value=id;
+  document.getElementById('edit-name').value=name;
+  document.getElementById('edit-desc').value=desc;
+  document.getElementById('edit-public').checked=isPublic;
+  openModal('edit-proj-modal');
+}
+
+async function saveEdit(){
+  const id=document.getElementById('edit-repo-id').value;
+  const name=document.getElementById('edit-name').value.trim();
+  const description=document.getElementById('edit-desc').value.trim();
+  const is_public=document.getElementById('edit-public').checked;
+  const st=document.getElementById('edit-status');
+  st.style.display='block'; st.className='status'; st.textContent='Saving…';
+  try{
+  const r=await fetch(`${API}/projects/${id}`,{method:'PATCH',headers,body:JSON.stringify({name,description,is_public})});
+  if(!r.ok){const e=await r.json();throw new Error(e.detail||'Failed');}
+  st.className='status ok'; st.textContent='✓ Saved!';
+  setTimeout(()=>{closeModal('edit-proj-modal');loadRepos();},800);
+  }catch(e){st.className='status err';st.textContent='✗ '+e.message;}
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open'));});
+</script>
+<script src="nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Project Tree — Melodyfy</title>
+<style>
+:root{--bg:#07070a;--bg-canvas:#07070a;--bg-overlay:#0e0e12;--bg-inset:#050508;--border:#2e2e34;--border-muted:#1e1e24;--text-primary:#E8E4DC;--text-secondary:#C9C4BA;--text-muted:#7a7a82;--accent:#EDE8DF;--accent-hover:#F0EDE6;--green-btn:#EDE8DF;--green-hover:#F0EDE6;--green-accent:#EDE8DF;--green-bright:#E8E4DC;--blue:#E8E4DC;--orange:#f0883e;--red:#f87171;--purple:#bc8cff;}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--bg-canvas);color:var(--text-primary);font-family:'Space Grotesk',sans-serif;line-height:1.5;height:100vh;display:flex;flex-direction:column;}
+h1,h2,h3{font-family:'Archivo Black',sans-serif;color:var(--accent);}
+.glass{background:rgba(7,7,10,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(237,232,223,.4);box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(237,232,223,.12);border-radius:12px;}@supports not(backdrop-filter:blur(12px)){.glass{background:#0b0b0f;border:1px solid #4A4A55;}}
+
+.app-body{flex:1;display:grid;grid-template-columns:260px 1fr 300px;overflow:hidden;}
+/* Left sidebar: project info + controls */
+.left-panel{border-right:1px solid var(--border);padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.left-panel h3{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+/* Main canvas */
+.tree-canvas{flex:1;overflow:auto;position:relative;}
+.tree-canvas svg{display:block;}
+/* Right panel: commit detail */
+.right-panel{border-left:1px solid var(--border);padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
+.right-panel h3{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;}
+
+input,select,textarea{background:var(--bg-inset);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text-primary);font-size:13px;outline:none;transition:border-color .15s;font-family:inherit;}
+input:focus,select:focus{border-color:var(--blue);}
+.form-row{margin-bottom:10px;}
+.form-row label{font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;text-transform:uppercase;}
+/* SVG node styles */
+.node-rect{fill:#161b22;stroke:var(--border);stroke-width:1.5;cursor:pointer;rx:8;transition:all .15s;}
+.node-rect:hover{stroke:var(--accent);fill:#1a2a1e;}
+.node-rect.selected{fill:rgba(35,134,54,.2);stroke:#238636;stroke-width:2.5;}
+.node-rect.compare-a{fill:rgba(88,166,255,.15);stroke:#58a6ff;stroke-width:2.5;}
+.node-rect.compare-b{fill:rgba(245,158,11,.15);stroke:#f59e0b;stroke-width:2.5;}
+.node-hash{font-family:ui-monospace,'SFMono-Regular',monospace;font-size:11px;fill:#58a6ff;pointer-events:none;}
+.node-msg{font-size:11px;fill:var(--text-secondary);pointer-events:none;}
+.node-meta{font-size:10px;fill:var(--text-muted);pointer-events:none;}
+.edge{stroke:var(--border);stroke-width:1.5;fill:none;}
+/* Detail items */
+.detail-kv{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--border-muted);}
+.detail-kv:last-child{border:none;}
+.detail-key{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;}
+.detail-val{font-size:13px;font-weight:500;}
+.tag{display:inline-flex;padding:2px 8px;background:rgba(237,232,223,.12);border:1px solid rgba(237,232,223,.25);border-radius:99px;font-size:11px;color:var(--green-accent);}
+.status-msg{font-size:12px;padding:8px 10px;border-radius:6px;margin-top:4px;}
+.status-msg.ok{background:rgba(63,185,80,.1);color:var(--green-accent);}
+.status-msg.err{background:rgba(248,81,73,.1);color:var(--red);}
+.status-msg.info{background:rgba(88,166,255,.1);color:var(--blue);}
+/* Diff table */
+.diff-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(48,54,61,.3);font-size:12px;}
+.diff-row:last-child{border:none;}
+.diff-added{color:var(--accent-hover);} .diff-removed{color:#f85149;} .diff-changed{color:#f0883e;} .diff-same{color:var(--text-muted);}
+@media(max-width:900px){.app-body{grid-template-columns:1fr;}.left-panel,.right-panel{border:none;border-bottom:1px solid var(--border);max-height:200px;}}
+</style>
+</head>
+<body>
+<div id="nav-root"></div>
+
+<div class="app-body">
+<!-- LEFT: controls -->
+<div class="left-panel">
+<div>
+<h3>Repository</h3>
+<div class="form-row">
+<label>Project ID</label>
+<input type="text" id="project-id-input" placeholder="UUID…" style="width:100%;font-size:11px;"/>
+</div>
+<div class="form-row">
+<label>Auth Token (optional)</label>
+<input type="text" id="token-input" placeholder="JWT…" style="width:100%;font-size:11px;" value=""/>
+</div>
+<button class="btn btn-green" style="width:100%;font-size:13px;" onclick="loadTree()">Load Tree</button>
+</div>
+
+<div>
+<h3>View</h3>
+<div style="display:flex;flex-direction:column;gap:6px;">
+<button class="btn btn-ghost btn-sm" onclick="location.href='projects.html'">← All Projects</button>
+<button class="btn btn-ghost btn-sm" id="compare-toggle-btn" onclick="toggleCompareMode()">Compare Mode</button>
+<button class="btn btn-ghost btn-sm" onclick="loadBranches()">View Branches</button>
+</div>
+<div id="compare-hint" style="font-size:11px;color:var(--orange);margin-top:8px;display:none;">Select two nodes to compare</div>
+</div>
+
+<!-- Branches list -->
+<div id="branches-section" style="display:none;">
+<h3>Branches / Root Commits</h3>
+<div id="branches-list" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;"></div>
+</div>
+
+<div id="left-status"></div>
+</div>
+
+<!-- MIDDLE: SVG tree canvas -->
+<div class="tree-canvas" id="tree-canvas">
+<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:12px;color:var(--text-muted);">
+<div style="font-size:3rem;"></div>
+<div style="font-size:16px;font-weight:600;">No tree loaded</div>
+<div style="font-size:13px;">Enter a project ID and click Load Tree</div>
+</div>
+</div>
+
+<!-- RIGHT: commit detail -->
+<div class="right-panel" id="right-panel">
+<h3>Commit Detail</h3>
+<div id="commit-detail" style="color:var(--text-muted);font-size:13px;">Click a node to inspect</div>
+</div>
+</div>
+
+<script>
+const API='http://localhost:8000';
+const token=localStorage.getItem('bf_token');
+let _treeData=null;
+let selectedNodeId=null;
+let compareMode=false;
+let compareNodeId=null;
+
+function signOut(){localStorage.removeItem('bf_token');localStorage.removeItem('bf_user');location.href='index.html';}
+function setStatus(id,msg,type='info'){const el=document.getElementById(id);if(!el)return;el.className='status-msg '+type;el.textContent=msg;el.style.display='block';setTimeout(()=>{el.style.display='none';},5000);}
+
+function getToken(){ return document.getElementById('token-input').value.trim()||token||''; }
+function authH(){ const t=getToken(); return t?{'Authorization':`Bearer ${t}`,'Content-Type':'application/json'}:{'Content-Type':'application/json'}; }
+function projId(){ return document.getElementById('project-id-input').value.trim(); }
+
+/* ── Load tree ────────────────────────────────────────────────── */
+async function loadTree(){
+  const pid=projId();
+  if(!pid){setStatus('left-status','Please enter a project ID.','err');return;}
+  setStatus('left-status','Loading tree…','info');
+  const canvas=document.getElementById('tree-canvas');
+  canvas.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);">Loading…</div>';
+  try{
+  const r=await fetch(`${API}/projects/${pid}/tree`,{headers:authH()});
+  if(!r.ok){const e=await r.json();throw new Error(e.detail||r.status);}
+  _treeData=await r.json();
+  // fetch project name
+  try{
+  const pr=await fetch(`${API}/projects/${pid}`,{headers:authH()});
+  if(pr.ok){const pd=await pr.json();document.getElementById('nav-proj-name').textContent=pd.name||'';}
+  }catch{}
+  renderTree(_treeData);
+  setStatus('left-status',`✓ ${_treeData.nodes?.length||0} commits loaded.`,'ok');
+  }catch(e){
+  canvas.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--red);">Error: ${e.message}</div>`;
+  setStatus('left-status','✗ '+e.message,'err');
+  }
+}
+
+/* ── Render SVG tree ──────────────────────────────────────────── */
+const NODE_W=180,NODE_H=80,H_GAP=60,V_GAP=30;
+function renderTree(data){
+  const nodes=data.nodes||[];
+  const edges=data.edges||[];
+  if(!nodes.length){document.getElementById('tree-canvas').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);">No commits in this repository.</div>';return;}
+
+  // Rank assignment (topological)
+  const childMap={};
+  edges.forEach(e=>{(childMap[e.parent]||(childMap[e.parent]=[])).push(e.child);});
+  const parentMap={};
+  edges.forEach(e=>{parentMap[e.child]=(parentMap[e.child]||0)+1;});
+  const roots=nodes.filter(n=>!parentMap[n.id]).map(n=>n.id);
+  const rank={};
+  const queue=[...roots];
+  roots.forEach(r=>rank[r]=0);
+  while(queue.length){
+  const cur=queue.shift();
+  (childMap[cur]||[]).forEach(ch=>{
+  const r=(rank[cur]||0)+1;
+  if(rank[ch]===undefined||rank[ch]<r){rank[ch]=r;queue.push(ch);}
+  });
+  }
+
+  // Group by rank → columns
+  const cols={};
+  nodes.forEach(n=>{const r=rank[n.id]||0;(cols[r]||(cols[r]=[])).push(n.id);});
+  const nodePos={};
+  Object.keys(cols).sort((a,b)=>a-b).forEach(r=>{
+  const col=cols[r];
+  col.forEach((nid,i)=>{
+  nodePos[nid]={x:r*(NODE_W+H_GAP)+20,y:i*(NODE_H+V_GAP)+20};
+  });
+  });
+
+  const maxX=Math.max(...Object.values(nodePos).map(p=>p.x))+NODE_W+40;
+  const maxY=Math.max(...Object.values(nodePos).map(p=>p.y))+NODE_H+40;
+
+  let svg=`<svg width="${maxX}" height="${maxY}" xmlns="http://www.w3.org/2000/svg" style="min-width:${maxX}px;">
+<defs><marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto"><polygon points="0 0,6 2,0 4" fill="var(--border)"/></marker></defs>`;
+
+  // Edges
+  edges.forEach(e=>{
+  const p=nodePos[e.parent],c=nodePos[e.child];
+  if(!p||!c) return;
+  const x1=p.x+NODE_W,y1=p.y+NODE_H/2,x2=c.x,y2=c.y+NODE_H/2;
+  const mx=(x1+x2)/2;
+  svg+=`<path class="edge" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" marker-end="url(#arrowhead)"/>`;
+  });
+
+  // Nodes
+  nodes.forEach(n=>{
+  const p=nodePos[n.id];if(!p)return;
+  const isSel=n.id===selectedNodeId;
+  const isCA=compareMode&&n.id===selectedNodeId;
+  const isCB=compareMode&&n.id===compareNodeId;
+  const cls=isCB?'node-rect compare-b':isCA?'node-rect compare-a':isSel?'node-rect selected':'node-rect';
+  const hash=String(n.hash||'').slice(0,8);
+  const msg=truncate(n.message||n.prompt||'',22);
+  const meta=n.bpm?`${n.bpm||''} BPM · ${n.key||'?'}`:'';
+  svg+=`<g onclick="selectNode('${n.id}')" style="cursor:pointer;">
+<rect class="${cls}" x="${p.x}" y="${p.y}" width="${NODE_W}" height="${NODE_H}" rx="8"/>
+<text class="node-hash" x="${p.x+12}" y="${p.y+18}">${hash}</text>
+<text class="node-msg" x="${p.x+12}" y="${p.y+36}">${msg}</text>
+<text class="node-meta" x="${p.x+12}" y="${p.y+54}">${meta}</text>
+  ${n.audio_url?`<text x="${p.x+NODE_W-22}" y="${p.y+22}" font-size="14" fill="var(--accent)" style="cursor:pointer" onclick="event.stopPropagation();playAudio('${n.audio_url}')">▶</text>`:''}
+</g>`;
+  });
+  svg+='</svg>';
+  document.getElementById('tree-canvas').innerHTML=svg;
+}
+function truncate(s,n){return s&&s.length>n?s.slice(0,n)+'…':s||'';}
+
+/* ── Select node ──────────────────────────────────────────────── */
+function selectNode(id){
+  if(compareMode){
+  if(!selectedNodeId){
+  selectedNodeId=id;
+  if(_treeData)renderTree(_treeData);
+  document.getElementById('compare-hint').textContent='Now click a second node…';
+  document.getElementById('commit-detail').innerHTML='<p style="color:var(--orange);font-size:13px;">Select a second node to diff</p>';
+  return;
+  }
+  if(id===selectedNodeId)return;
+  compareNodeId=id;
+  if(_treeData)renderTree(_treeData);
+  runDiff(selectedNodeId,compareNodeId);
+  return;
+  }
+
+  selectedNodeId=id; compareNodeId=null;
+  if(_treeData)renderTree(_treeData);
+
+  const node=(_treeData.nodes||[]).find(n=>n.id===id);
+  if(!node)return;
+  const pid=projId();
+  const detail=document.getElementById('commit-detail');
+  const date=new Date(node.created_at||Date.now()).toLocaleString();
+  detail.innerHTML=`
+<div class="detail-kv"><div class="detail-key">Hash</div><div class="detail-val" style="font-family:monospace;color:var(--blue);font-size:12px;">${node.hash||'—'}</div></div>
+<div class="detail-kv"><div class="detail-key">Message</div><div class="detail-val">${node.message||'—'}</div></div>
+  ${node.prompt?`<div class="detail-kv"><div class="detail-key">Prompt</div><div class="detail-val" style="font-size:12px;color:var(--text-muted);">${truncate(node.prompt,80)}</div></div>`:''}
+  ${node.bpm?`<div class="detail-kv"><div class="detail-key">BPM</div><div class="detail-val" style="color:var(--green-accent);">${node.bpm}</div></div>`:''}
+  ${node.key?`<div class="detail-kv"><div class="detail-key">Key</div><div class="detail-val">${node.key}</div></div>`:''}
+  ${node.mood?`<div class="detail-kv"><div class="detail-key">Mood</div><div class="detail-val"><span class="tag">${node.mood}</span></div></div>`:''}
+<div class="detail-kv"><div class="detail-key">Created</div><div class="detail-val" style="font-size:12px;">${date}</div></div>
+  ${node.audio_url?`<div class="detail-kv"><div class="detail-key">Audio</div><div class="detail-val"><audio controls src="${API}${node.audio_url}" crossorigin="anonymous" style="width:100%;height:32px;margin-top:4px;"></audio><a href="${API}${node.audio_url}" download style="font-size:11px;color:var(--blue);display:block;margin-top:4px;text-align:right;">⬇ Download</a></div></div>`:''}
+<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;border-top:1px solid var(--border-muted);padding-top:12px;">
+<button class="btn btn-green" style="font-size:12px;" onclick="forkProject('${pid}')">Fork Project</button>
+<button class="btn btn-ghost" style="font-size:12px;" onclick="branchFromHere('${id}','${pid}')">New Beat from Here</button>
+<button class="btn btn-ghost" style="font-size:12px;" id="cmp-btn" onclick="toggleCompareMode()"> ${compareMode?'Cancel Compare':'Compare with…'}</button>
+</div>`;
+}
+
+/* ── Compare mode ─────────────────────────────────────────────── */
+function toggleCompareMode(){
+  compareMode=!compareMode; selectedNodeId=null; compareNodeId=null;
+  if(_treeData)renderTree(_treeData);
+  const hint=document.getElementById('compare-hint');
+  const btn=document.getElementById('compare-toggle-btn');
+  if(compareMode){
+  hint.style.display='block';hint.textContent='Select first node…';
+  btn.style.borderColor='var(--orange)';btn.style.color='var(--orange)';
+  document.getElementById('commit-detail').innerHTML='<p style="color:var(--orange);font-size:13px;">Compare mode on — select first node</p>';
+  }else{
+  hint.style.display='none';
+  btn.style.borderColor='';btn.style.color='';
+  document.getElementById('commit-detail').innerHTML='<p style="color:var(--text-muted);font-size:13px;">Click a node to inspect</p>';
+  }
+}
+
+/* ── Diff ────────────────────────────────────────────────────── */
+async function runDiff(hashA,hashB){
+  const pid=projId();
+  const detail=document.getElementById('commit-detail');
+  detail.innerHTML='<div style="color:var(--text-muted);font-size:13px;">Loading diff…</div>';
+  try{
+  const r=await fetch(`${API}/projects/${pid}/commits/${hashA}/diff/${hashB}`,{headers:authH()});
+  if(!r.ok){const e=await r.json();throw new Error(e.detail||r.status);}
+  const d=await r.json();
+  const statusColor={changed:'diff-changed',added:'diff-added',removed:'diff-removed',unchanged:'diff-same'};
+  detail.innerHTML=`
+<div style="margin-bottom:12px;">
+<div class="detail-key">Comparing</div>
+<div style="font-family:monospace;font-size:11px;margin-top:4px;">
+<span style="color:var(--blue);">${String(d.commit_a?.hash||'').slice(0,8)}</span>
+<span style="color:var(--text-muted);margin:0 6px;">→</span>
+<span style="color:var(--orange);">${String(d.commit_b?.hash||'').slice(0,8)}</span>
+</div>
+</div>
+<div style="margin-bottom:12px;">
+<div class="detail-key" style="margin-bottom:6px;">Deltas</div>
+  ${d.deltas?.bpm!=null?`<div class="diff-row"><span>BPM</span><span class="${d.deltas.bpm>0?'diff-added':d.deltas.bpm<0?'diff-removed':'diff-same'}">${d.deltas.bpm>0?'+':''}${Number(d.deltas.bpm).toFixed(1)}</span></div>`:''}
+  ${d.deltas?.energy!=null?`<div class="diff-row"><span>Energy</span><span class="${d.deltas.energy>0?'diff-added':'diff-removed'}">${d.deltas.energy>0?'+':''}${Number(d.deltas.energy).toFixed(3)}</span></div>`:''}
+  ${d.deltas?.duration!=null?`<div class="diff-row"><span>Duration</span><span style="color:var(--text-muted)">${d.deltas.duration>0?'+':''}${Number(d.deltas.duration).toFixed(1)}s</span></div>`:''}
+  ${d.deltas?.key_changed?`<div class="diff-row"><span>Key</span><span style="color:var(--orange)">${d.deltas.key_a||'?'} → ${d.deltas.key_b||'?'}</span></div>`:''}
+</div>
+  ${d.stems&&d.stems.length?`<div>
+<div class="detail-key" style="margin-bottom:6px;">Stems</div>
+  ${d.stems.map(s=>`<div class="diff-row"><span style="font-family:monospace;">${s.stem_type}</span><span class="${statusColor[s.status]||'diff-same'}">${s.status}</span></div>`).join('')}
+</div>`:''}
+<button class="btn btn-ghost" style="font-size:11px;width:100%;margin-top:12px;" onclick="compareMode=false;selectedNodeId=null;compareNodeId=null;toggleCompareMode()">Exit Compare</button>`;
+  }catch(e){
+  detail.innerHTML=`<div style="color:var(--red);font-size:13px;">Diff error: ${e.message}</div>`;
+  }
+}
+
+/* ── Fork ────────────────────────────────────────────────────── */
+async function forkProject(pid){
+  const t=getToken();
+  if(!t){alert('Please add your auth token in the left panel.');return;}
+  try{
+  const r=await fetch(`${API}/projects/${pid}/fork`,{method:'POST',headers:authH()});
+  if(r.ok){const d=await r.json();if(confirm('Forked! Load your copy?')){document.getElementById('project-id-input').value=d.id;loadTree();}}
+  else{const e=await r.json();alert('Fork failed: '+(e.detail||r.status));}
+  }catch(e){alert('Fork error: '+e.message);}
+}
+
+function branchFromHere(nodeId,pid){
+  location.href=`studio.html?parent_id=${encodeURIComponent(nodeId)}&repo_id=${encodeURIComponent(pid)}`;
+}
+
+/* ── Branches ────────────────────────────────────────────────── */
+async function loadBranches(){
+  const pid=projId(); if(!pid)return;
+  try{
+  const r=await fetch(`${API}/projects/${pid}/branches`,{headers:authH()});
+  if(!r.ok)throw new Error(r.status);
+  const d=await r.json();
+  const sec=document.getElementById('branches-section'); sec.style.display='block';
+  const list=document.getElementById('branches-list');
+  const branches=d.branches||d||[];
+  list.innerHTML=branches.map(b=>`<div style="padding:6px 8px;background:var(--bg-inset);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;" onclick="selectNode('${b.id}')"><span style="font-family:monospace;color:var(--blue);">${String(b.hash||b.commit_hash||'').slice(0,8)}</span><span style="color:var(--text-muted);margin-left:8px;">${b.message||'root'}</span></div>`).join('');
+  }catch(e){setStatus('left-status','✗ Branches: '+e.message,'err');}
+}
+
+function playAudio(url){ new Audio(`${API}${url}`).play(); }
+
+/* ── Auto-load from URL params ────────────────────────────────── */
+(function(){
+  const params=new URLSearchParams(location.search);
+  const pid=params.get('project');
+  const embed=params.get('embed')==='1';
+  if(embed){
+    // Hide nav and left panel; let tree fill the iframe
+    const style=document.createElement('style');
+    style.textContent='#nav-root,nav.mfy-nav{display:none!important;}.app-body{grid-template-columns:0 1fr 280px!important;}.left-panel{display:none!important;}';
+    document.head.appendChild(style);
+  }
+  if(pid){
+    document.getElementById('project-id-input').value=pid;
+    const t=localStorage.getItem('bf_token');
+    if(t) document.getElementById('token-input').value=t;
+    loadTree();
+  }
+})();
+</script>
+<script src="nav.js"></script>
+</body>
+</html>

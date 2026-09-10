@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Settings &#8212; Melodyfy</title>
+<script>
+(function(){const t=localStorage.getItem('bf_token');if(!t){location.href='index.html';return;}try{const p=JSON.parse(atob(t.split('.')[1]));if(p.exp&&p.exp<Date.now()/1000){localStorage.removeItem('bf_token');location.href='index.html';}}catch(e){localStorage.removeItem('bf_token');location.href='index.html';}})();
+</script>
+<style>
+:root{--bg:#07070a;--bg-canvas:#07070a;--bg-overlay:#0e0e12;--bg-inset:#050508;--border:#2e2e34;--border-muted:#1e1e24;--text-primary:#E8E4DC;--text-secondary:#C9C4BA;--text-muted:#7a7a82;--accent:#EDE8DF;--accent-hover:#F0EDE6;--green-btn:#EDE8DF;--green-hover:#F0EDE6;--green-accent:#EDE8DF;--green-bright:#E8E4DC;--blue:#E8E4DC;--orange:#f0883e;--red:#f87171;--purple:#bc8cff;}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--bg-canvas);color:var(--text-primary);font-family:'Space Grotesk',sans-serif;line-height:1.5;min-height:100vh;}
+h1,h2,h3{font-family:'Archivo Black',sans-serif;color:var(--accent);}
+
+/* ── gradient background ── */
+body::before{
+  content:'';
+  position:fixed;inset:0;z-index:-1;
+  background:
+  radial-gradient(ellipse 80% 60% at 10% 0%, rgba(237,232,223,.13) 0%, transparent 60%),
+  radial-gradient(ellipse 60% 50% at 90% 20%, rgba(188,140,255,.07) 0%, transparent 55%),
+  radial-gradient(ellipse 70% 55% at 50% 90%, rgba(240,136,62,.06) 0%, transparent 60%),
+  radial-gradient(ellipse 90% 80% at 30% 50%, rgba(237,232,223,.04) 0%, transparent 70%),
+  #07070a;
+  pointer-events:none;
+}
+
+
+.glass{background:rgba(7,7,10,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(237,232,223,.4);box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(237,232,223,.12);border-radius:12px;}
+@supports not(backdrop-filter:blur(12px)){.glass{background:#0b0b0f;border:1px solid #4A4A55;}}
+
+.page{max-width:900px;margin:0 auto;padding:36px 24px 64px;}
+.page-header{margin-bottom:32px;}
+.page-header h1{font-size:2rem;margin-bottom:6px;}
+.page-header p{color:var(--text-muted);font-size:14px;}
+
+.settings-layout{display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:start;}
+
+.settings-sidebar{
+  position:sticky;top:72px;
+  display:flex;flex-direction:column;gap:2px;
+  background:rgba(14,14,18,.45);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(237,232,223,.1);
+  border-radius:12px;
+  padding:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,.3);
+}
+.stab{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:7px;cursor:pointer;font-size:14px;color:var(--text-secondary);transition:all .15s;border:1px solid transparent;text-decoration:none;}
+.stab:hover{background:rgba(237,232,223,.09);color:var(--text-primary);}
+.stab.active{background:rgba(237,232,223,.14);border-color:rgba(237,232,223,.22);color:var(--text-primary);box-shadow:inset 0 1px 0 rgba(237,232,223,.08);}
+.stab-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+
+.settings-section{display:none;flex-direction:column;gap:20px;}
+.settings-section.visible{display:flex;}
+/* glassmorphism cards */
+.card{
+  background:rgba(14,14,18,.55);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(237,232,223,.14);
+  box-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(237,232,223,.08);
+  border-radius:14px;
+  padding:24px;
+  transition:border-color .2s,box-shadow .2s;
+}
+.card:hover{
+  border-color:rgba(237,232,223,.22);
+  box-shadow:0 12px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(237,232,223,.1);
+}
+@supports not(backdrop-filter:blur(18px)){.card{background:#0d0d11;border:1px solid rgba(237,232,223,.15);}}
+.card-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:rgba(237,232,223,.1);}
+
+.avatar-row{display:flex;align-items:center;gap:20px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.avatar-circle{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#1a1a20);display:flex;align-items:center;justify-content:center;font-size:28px;font-family:'Archivo Black',sans-serif;color:#07070a;flex-shrink:0;border:2px solid rgba(237,232,223,.3);}
+.avatar-info{flex:1;}
+.avatar-name{font-family:'Archivo Black',sans-serif;font-size:1.1rem;color:var(--text-primary);margin-bottom:2px;}
+.avatar-handle{font-size:13px;color:var(--text-muted);}
+.avatar-actions{display:flex;gap:8px;margin-top:10px;}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);}
+input[type="text"],input[type="email"],input[type="password"],textarea,select{width:100%;padding:9px 14px;background:rgba(5,5,8,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(237,232,223,.1);border-radius:7px;font-size:14px;font-family:'Space Grotesk',sans-serif;color:var(--text-primary);outline:none;transition:border-color .15s,box-shadow .15s;resize:none;}
+input:focus,textarea:focus,select:focus{border-color:rgba(237,232,223,.5);box-shadow:0 0 0 3px rgba(237,232,223,.08);}
+input::placeholder,textarea::placeholder{color:var(--text-muted);}
+select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%237a7a82' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+textarea{min-height:80px;line-height:1.5;}
+.form-hint{font-size:12px;color:var(--text-muted);margin-top:2px;}
+
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border-muted);}
+.setting-row:last-child{border-bottom:none;padding-bottom:0;}
+.setting-row:first-child{padding-top:0;}
+.setting-text{flex:1;padding-right:20px;}
+.setting-label{font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:2px;}
+.setting-desc{font-size:12px;color:var(--text-muted);}
+
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-track{position:absolute;inset:0;background:var(--border);border-radius:24px;cursor:pointer;transition:background .2s;}
+.toggle input:checked + .toggle-track{background:var(--accent);}
+.toggle-thumb{position:absolute;width:18px;height:18px;left:3px;top:3px;background:#E8E4DC;border-radius:50%;transition:transform .2s;pointer-events:none;}
+.toggle input:checked ~ .toggle-thumb{transform:translateX(20px);}
+
+.setting-select{min-width:130px;padding:6px 32px 6px 12px;font-size:13px;}
+
+.genre-grid{display:flex;flex-wrap:wrap;gap:8px;padding-top:4px;}
+.genre-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;font-size:13px;cursor:pointer;border:1px solid var(--border);color:var(--text-secondary);background:var(--bg-inset);transition:all .15s;user-select:none;}
+.genre-chip:hover{border-color:rgba(237,232,223,.4);color:var(--text-primary);}
+.genre-chip.selected{background:rgba(237,232,223,.15);border-color:rgba(237,232,223,.5);color:var(--text-primary);}
+
+.danger-card{
+  background:rgba(14,14,18,.55);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(248,113,113,.22);
+  box-shadow:0 8px 32px rgba(248,113,113,.06),inset 0 1px 0 rgba(248,113,113,.06);
+  border-radius:14px;
+  padding:24px;
+}
+.danger-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--red);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.danger-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(248,113,113,.1);}
+.danger-item:last-child{border-bottom:none;padding-bottom:0;}
+.danger-item:first-child{padding-top:0;}
+
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(14,14,18,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(237,232,223,.22);box-shadow:0 8px 24px rgba(0,0,0,.4);border-radius:8px;padding:10px 20px;font-size:14px;color:var(--text-primary);opacity:0;transition:opacity .2s,transform .2s;z-index:999;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-backdrop.open{opacity:1;pointer-events:all;}
+.modal-box{
+  background:rgba(14,14,18,.72);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(248,113,113,.28);
+  box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(248,113,113,.08);
+  border-radius:16px;
+  padding:28px;max-width:420px;width:90%;transform:translateY(16px);transition:transform .2s;
+}
+.modal-backdrop.open .modal-box{transform:translateY(0);}
+.modal-icon{font-size:2rem;margin-bottom:12px;}
+.modal-title{font-family:'Archivo Black',sans-serif;font-size:1.1rem;margin-bottom:8px;color:var(--text-primary);}
+.modal-body{font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:20px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+
+@media(max-width:700px){
+  .settings-layout{grid-template-columns:1fr;}
+  .settings-sidebar{flex-direction:row;flex-wrap:wrap;position:static;gap:4px;margin-bottom:8px;}
+  .stab{padding:6px 12px;font-size:13px;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-group.full{grid-column:1;}
+}
+@media(max-width:500px){}
+</style>
+</head>
+<body>
+
+<div id="nav-root"></div>
+
+<main class="page">
+<div class="page-header">
+<h1>Settings</h1>
+<p>Manage your Melodyfy profile, audio preferences, and account.</p>
+</div>
+
+<div class="settings-layout">
+
+<nav class="settings-sidebar" aria-label="Settings navigation">
+<a class="stab active" data-tab="profile" href="#"><span class="stab-icon">&#128100;</span>Profile</a>
+<a class="stab" data-tab="audio" href="#"><span class="stab-icon">&#127923;</span>Audio</a>
+<a class="stab" data-tab="notifications" href="#"><span class="stab-icon">&#128276;</span>Notifications</a>
+<a class="stab" data-tab="privacy" href="#"><span class="stab-icon">&#128274;</span>Privacy</a>
+<a class="stab" data-tab="account" href="#"><span class="stab-icon">&#9881;&#65039;</span>Account</a>
+</nav>
+
+<div>
+
+<!-- PROFILE -->
+<section id="tab-profile" class="settings-section visible">
+
+<div class="card">
+<div class="card-title">Public Profile</div>
+<div class="avatar-row">
+<div class="avatar-circle" id="avatar-initials">?</div>
+<div class="avatar-info">
+<div class="avatar-name" id="display-name">Loading&#8230;</div>
+<div class="avatar-handle" id="display-handle">@&#8212;</div>
+<div class="avatar-actions">
+<button class="btn btn-ghost btn-sm" onclick="toast('Avatar upload coming soon')">Change photo</button>
+</div>
+</div>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label for="inp-fullname">Full Name</label>
+<input type="text" id="inp-fullname" placeholder="Your name"/>
+</div>
+<div class="form-group">
+<label for="inp-username">Username</label>
+<input type="text" id="inp-username" placeholder="melodymaker"/>
+</div>
+<div class="form-group">
+<label for="inp-email">Email</label>
+<input type="email" id="inp-email" placeholder="you@example.com"/>
+</div>
+<div class="form-group">
+<label for="inp-location">Location</label>
+<input type="text" id="inp-location" placeholder="City, Country"/>
+</div>
+<div class="form-group full">
+<label for="inp-bio">Bio</label>
+<textarea id="inp-bio" placeholder="Tell the Melodyfy community about yourself&#8230;"></textarea>
+<span class="form-hint">Shown on your public profile.</span>
+</div>
+</div>
+<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+<button class="btn btn-ghost" onclick="resetProfile()">Discard</button>
+<button class="btn btn-green" onclick="saveProfile()">Save changes</button>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">Favourite Genres</div>
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Select the genres you produce or listen to.</p>
+<div class="genre-grid" id="genre-grid"></div>
+<div style="margin-top:16px;display:flex;justify-content:flex-end;">
+<button class="btn btn-green" onclick="saveGenres()">Save genres</button>
+</div>
+</div>
+
+</section>
+
+<!-- AUDIO -->
+<section id="tab-audio" class="settings-section">
+
+<div class="card">
+<div class="card-title">Studio Defaults</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Default BPM</div><div class="setting-desc">Starting tempo for new projects.</div></div>
+<select class="setting-select" id="sel-bpm"><option>80</option><option>90</option><option selected>120</option><option>140</option><option>160</option><option>180</option></select>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Default Key</div><div class="setting-desc">Root note for new projects.</div></div>
+<select class="setting-select" id="sel-key">
+<option>C Major</option><option>C Minor</option><option>D Major</option><option>D Minor</option>
+<option>E Major</option><option>E Minor</option><option selected>F Major</option><option>F Minor</option>
+<option>G Major</option><option>G Minor</option><option>A Major</option><option>A Minor</option>
+<option>B Major</option><option>B Minor</option>
+</select>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Time Signature</div><div class="setting-desc">Default time signature for new projects.</div></div>
+<select class="setting-select" id="sel-timesig"><option selected>4 / 4</option><option>3 / 4</option><option>6 / 8</option><option>5 / 4</option></select>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Audio Quality</div><div class="setting-desc">Export &amp; preview sample rate.</div></div>
+<select class="setting-select" id="sel-quality"><option>128 kbps</option><option selected>192 kbps</option><option>320 kbps</option><option>WAV (lossless)</option></select>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">Playback</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Metronome by default</div><div class="setting-desc">Enable the metronome when opening Studio.</div></div>
+<label class="toggle"><input type="checkbox" id="tog-metronome"/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Waveform display</div><div class="setting-desc">Show waveform visualiser in the player bar.</div></div>
+<label class="toggle"><input type="checkbox" id="tog-waveform" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Auto-save projects</div><div class="setting-desc">Save changes every 2 minutes in Studio.</div></div>
+<label class="toggle"><input type="checkbox" id="tog-autosave" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Stem isolation on import</div><div class="setting-desc">Automatically separate stems when a track is uploaded.</div></div>
+<label class="toggle"><input type="checkbox" id="tog-stems"/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+</div>
+
+<div style="display:flex;justify-content:flex-end;">
+<button class="btn btn-green" onclick="saveAudio()">Save preferences</button>
+</div>
+
+</section>
+
+<!-- NOTIFICATIONS -->
+<section id="tab-notifications" class="settings-section">
+
+<div class="card">
+<div class="card-title">Email Notifications</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Collaboration invites</div><div class="setting-desc">When someone invites you to co-produce.</div></div>
+<label class="toggle"><input type="checkbox" id="n-collab" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Comments on your beats</div><div class="setting-desc">New comments or replies on your tracks.</div></div>
+<label class="toggle"><input type="checkbox" id="n-comments" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">New followers</div><div class="setting-desc">When someone follows your profile.</div></div>
+<label class="toggle"><input type="checkbox" id="n-follows"/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Weekly digest</div><div class="setting-desc">A summary of your stats and trending beats every Monday.</div></div>
+<label class="toggle"><input type="checkbox" id="n-digest" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Product updates</div><div class="setting-desc">New features and announcements from Melodyfy.</div></div>
+<label class="toggle"><input type="checkbox" id="n-updates"/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">In-App Notifications</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Beat play milestones</div><div class="setting-desc">Notify me when a beat hits 10, 100, 1000 plays.</div></div>
+<label class="toggle"><input type="checkbox" id="n-milestones" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Community mentions</div><div class="setting-desc">When someone @mentions you in a thread.</div></div>
+<label class="toggle"><input type="checkbox" id="n-mentions" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+</div>
+
+<div style="display:flex;justify-content:flex-end;">
+<button class="btn btn-green" onclick="toast('Notification preferences saved \u2713')">Save preferences</button>
+</div>
+
+</section>
+
+<!-- PRIVACY -->
+<section id="tab-privacy" class="settings-section">
+
+<div class="card">
+<div class="card-title">Visibility</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Public profile</div><div class="setting-desc">Anyone can view your profile page and beats.</div></div>
+<label class="toggle"><input type="checkbox" id="p-public" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Appear in Explore</div><div class="setting-desc">Your beats can be featured in the Explore feed.</div></div>
+<label class="toggle"><input type="checkbox" id="p-explore" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Show listening activity</div><div class="setting-desc">Let followers see what you&#39;re currently playing.</div></div>
+<label class="toggle"><input type="checkbox" id="p-activity"/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">Collaboration</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Accept collab invites</div><div class="setting-desc">Allow other producers to invite you to projects.</div></div>
+<label class="toggle"><input type="checkbox" id="p-collab" checked/><span class="toggle-track"></span><span class="toggle-thumb"></span></label>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Collab invite source</div><div class="setting-desc">Who can send you collaboration invites.</div></div>
+<select class="setting-select" id="sel-collabsrc"><option>Everyone</option><option selected>Followers only</option><option>Nobody</option></select>
+</div>
+<div class="setting-row">
+<div class="setting-text"><div class="setting-label">Direct messages</div><div class="setting-desc">Who can message you directly.</div></div>
+<select class="setting-select" id="sel-dms"><option>Everyone</option><option selected>Followers only</option><option>Nobody</option></select>
+</div>
+</div>
+
+<div style="display:flex;justify-content:flex-end;">
+<button class="btn btn-green" onclick="toast('Privacy settings saved \u2713')">Save settings</button>
+</div>
+
+</section>
+
+<!-- ACCOUNT -->
+<section id="tab-account" class="settings-section">
+
+<div class="card">
+<div class="card-title">Change Password</div>
+<div class="form-grid">
+<div class="form-group full">
+<label for="inp-curpwd">Current password</label>
+<input type="password" id="inp-curpwd" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"/>
+</div>
+<div class="form-group">
+<label for="inp-newpwd">New password</label>
+<input type="password" id="inp-newpwd" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"/>
+</div>
+<div class="form-group">
+<label for="inp-confpwd">Confirm new password</label>
+<input type="password" id="inp-confpwd" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"/>
+</div>
+</div>
+<div style="display:flex;justify-content:flex-end;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+<button class="btn btn-green" onclick="changePassword()">Update password</button>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title">Sessions</div>
+<div class="setting-row">
+<div class="setting-text">
+<div class="setting-label">Current session</div>
+<div class="setting-desc" id="session-info">Signed in on this device</div>
+</div>
+<span style="font-size:12px;padding:3px 10px;background:rgba(237,232,223,.12);border:1px solid rgba(237,232,223,.25);border-radius:99px;color:var(--accent);font-weight:600;">Active</span>
+</div>
+<div style="margin-top:12px;">
+<button class="btn btn-ghost btn-sm" onclick="signOut()">Sign out of all devices</button>
+</div>
+</div>
+
+<div class="danger-card">
+<div class="danger-title">&#9888;&#65039; Danger Zone</div>
+<div class="danger-item">
+<div class="setting-text">
+<div class="setting-label" style="color:var(--text-primary)">Export my data</div>
+<div class="setting-desc">Download all your beats, projects, and profile data.</div>
+</div>
+<button class="btn btn-ghost btn-sm" onclick="toast('Export queued \u2014 you\'ll receive an email shortly')">Export</button>
+</div>
+<div class="danger-item">
+<div class="setting-text">
+<div class="setting-label" style="color:var(--red)">Delete account</div>
+<div class="setting-desc">Permanently remove your account and all associated data.</div>
+</div>
+<button class="btn btn-danger btn-sm" onclick="openDeleteModal()">Delete account</button>
+</div>
+</div>
+
+</section>
+
+</div>
+</div>
+</main>
+
+<div class="modal-backdrop" id="delete-modal">
+<div class="modal-box">
+<div class="modal-icon">&#9888;&#65039;</div>
+<div class="modal-title">Delete your account?</div>
+<div class="modal-body">This will permanently erase your profile, all beats, projects, and collaboration history.
+<strong style="color:var(--red);display:block;margin-top:8px;">This action cannot be undone.</strong>
+</div>
+<div class="modal-actions">
+<button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+<button class="btn btn-danger" onclick="confirmDelete()">Yes, delete everything</button>
+</div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script src="nav.js"></script>
+<script>
+function getUser(){try{const t=localStorage.getItem('bf_token');if(!t)return null;return JSON.parse(atob(t.split('.')[1]));}catch{return null;}}
+function signOut(){localStorage.removeItem('bf_token');location.href='index.html';}
+
+let _tt;
+function toast(msg,d=2500){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),d);}
+
+document.querySelectorAll('.stab').forEach(tab=>{
+  tab.addEventListener('click',e=>{
+  e.preventDefault();
+  const target=tab.dataset.tab;
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('visible'));
+  document.getElementById('tab-'+target).classList.add('visible');
+  });
+});
+
+(function init(){
+  const user=getUser();if(!user)return;
+  const name=user.full_name||user.username||'Producer';
+  const handle='@'+(user.username||'unknown');
+  document.getElementById('display-name').textContent=name;
+  document.getElementById('display-handle').textContent=handle;
+  document.getElementById('avatar-initials').textContent=name.charAt(0).toUpperCase();
+  document.getElementById('inp-fullname').value=name;
+  document.getElementById('inp-username').value=user.username||'';
+  document.getElementById('inp-email').value=user.email||'';
+  document.getElementById('session-info').textContent='Signed in as '+handle+' \u00b7 '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+})();
+
+const GENRES=['Hip-Hop','Trap','Lo-fi','House','Techno','Afrobeats','R&B','Drill','Ambient','Jazz','Pop','Reggaeton','Dancehall','Bass','Soul','Funk','Experimental','Cinematic'];
+const savedGenres=new Set(JSON.parse(localStorage.getItem('mfy_genres')||'[]'));
+(function buildGenres(){
+  const grid=document.getElementById('genre-grid');
+  GENRES.forEach(g=>{
+  const chip=document.createElement('span');
+  chip.className='genre-chip'+(savedGenres.has(g)?' selected':'');
+  chip.textContent=g;
+  chip.onclick=()=>{chip.classList.toggle('selected');savedGenres.has(g)?savedGenres.delete(g):savedGenres.add(g);};
+  grid.appendChild(chip);
+  });
+})();
+function saveGenres(){localStorage.setItem('mfy_genres',JSON.stringify([...savedGenres]));toast('Genres saved \u2713');}
+
+function saveProfile(){
+  const name=document.getElementById('inp-fullname').value.trim();
+  if(name){document.getElementById('display-name').textContent=name;document.getElementById('avatar-initials').textContent=name.charAt(0).toUpperCase();}
+  toast('Profile saved \u2713');
+}
+function resetProfile(){
+  const user=getUser();if(!user)return;
+  document.getElementById('inp-fullname').value=user.full_name||user.username||'';
+  document.getElementById('inp-username').value=user.username||'';
+  document.getElementById('inp-email').value=user.email||'';
+  document.getElementById('inp-location').value='';
+  document.getElementById('inp-bio').value='';
+  toast('Changes discarded');
+}
+
+function saveAudio(){
+  const p={bpm:document.getElementById('sel-bpm').value,key:document.getElementById('sel-key').value,timesig:document.getElementById('sel-timesig').value,quality:document.getElementById('sel-quality').value,metronome:document.getElementById('tog-metronome').checked,waveform:document.getElementById('tog-waveform').checked,autosave:document.getElementById('tog-autosave').checked,stems:document.getElementById('tog-stems').checked};
+  localStorage.setItem('mfy_audio_prefs',JSON.stringify(p));
+  toast('Audio preferences saved \u2713');
+}
+(function loadAudio(){
+  try{const p=JSON.parse(localStorage.getItem('mfy_audio_prefs')||'{}');
+  if(p.bpm)document.getElementById('sel-bpm').value=p.bpm;
+  if(p.key)document.getElementById('sel-key').value=p.key;
+  if(p.timesig)document.getElementById('sel-timesig').value=p.timesig;
+  if(p.quality)document.getElementById('sel-quality').value=p.quality;
+  if(p.metronome!=null)document.getElementById('tog-metronome').checked=p.metronome;
+  if(p.waveform!=null)document.getElementById('tog-waveform').checked=p.waveform;
+  if(p.autosave!=null)document.getElementById('tog-autosave').checked=p.autosave;
+  if(p.stems!=null)document.getElementById('tog-stems').checked=p.stems;
+  }catch{}
+})();
+
+function changePassword(){
+  const cur=document.getElementById('inp-curpwd').value,np=document.getElementById('inp-newpwd').value,cp=document.getElementById('inp-confpwd').value;
+  if(!cur||!np||!cp){toast('Please fill in all password fields');return;}
+  if(np!==cp){toast('New passwords do not match');return;}
+  if(np.length<8){toast('Password must be at least 8 characters');return;}
+  document.getElementById('inp-curpwd').value='';document.getElementById('inp-newpwd').value='';document.getElementById('inp-confpwd').value='';
+  toast('Password updated \u2713');
+}
+
+function openDeleteModal(){document.getElementById('delete-modal').classList.add('open');}
+function closeDeleteModal(){document.getElementById('delete-modal').classList.remove('open');}
+function confirmDelete(){closeDeleteModal();localStorage.clear();toast('Account deleted. Redirecting\u2026',2000);setTimeout(()=>location.href='index.html',2200);}
+document.getElementById('delete-modal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
+</script>
+</body>
+</html>
