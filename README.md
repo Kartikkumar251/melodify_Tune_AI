@@ -18,104 +18,41 @@
 
 ## 🚀 Key Features
 
-- 🎹 **Text-to-Beat & Vibe Conditioning** — Generate production-ready instrumentals across 25+ curated genres with customized BPM and mood prompts.
-- 🎤 **Hum-to-Beat (Melody Conditioning)** — Record or upload a vocal melody/humming to condition MusicGen-Melody for structured song synthesis.
-- 🎛️ **4-Stem Audio Separation (Demucs HTDemucs)** — Deep learning stem extraction isolating Drums, Bass, Vocals, and Synths into individual WAV tracks.
-- 🌿 **"Git for Audio" Genealogy Tree** — Full version control for music projects:
-  - Commit audio snapshots with metadata (BPM, key signature, LUFS loudness).
-  - Branch, fork, and merge community remix trees.
-  - Acoustic and harmonic diff comparison between revisions.
-- 🎚️ **In-Browser Web DAW Mixer** — Per-channel volume faders, stereo panning, reverb impulse response, 8D spatial audio, mute/solo, and audio-reactive 60fps canvas visualizers.
-- 🪄 **AI Mastering & Audio Intelligence** — Automatic EBU R128 loudness normalization (-14 LUFS standard) and true-peak brickwall limiting.
+- 🎹 **Text-to-Beat & Dynamic Multi-Genre Synthesis** — High-energy instrumentals across Lo-Fi, Trap, Synthwave, Drill, Afrobeats, Rock, Piano, Phonk, and EDM.
+- 🎤 **Real-Time Voice Recording & Hum-to-Beat** — Record clean 16-bit PCM WAV in browser and convert vocal melodies into genre-matched beats.
+- 🎛️ **4-Stem Audio Separation (Demucs HTDemucs)** — Deep learning stem extraction isolating Drums, Bass, Vocals, and Other tracks.
+- ⚡ **FCA (Frequency Coded Audio) Engine** — Research-grade audio compression with **FCA-L (Lossless Reversible Transform with SHA-256 verification)** and **FCA-P (Perceptual with Q1–Q10 control)**.
+- 🌿 **"Git for Audio" Genealogy Tree** — Full version control for music projects (commits, branches, forks, harmonic diffs, and Stem Pack ZIP exporter).
+- 🎚️ **In-Browser Web DAW Mixer** — Per-channel volume faders, stereo panning, mute/solo, and audio-reactive 60fps canvas visualizers.
+- 🪄 **AI Mastering & Audio Intelligence** — Automatic EBU R128 loudness normalization (-14 LUFS standard), dynamic EQ, and true-peak limiting.
 - 🎼 **Audio-to-MIDI Transcription** — Extract note onsets and melodic pitches directly into downloadable `.mid` format.
-
----
-
-## 🏗️ Architecture & Data Flow
-
-```mermaid
-graph TD
-    Client["Frontend Client (Web DAW / Tone.js)"] -->|REST / Multipart| API["FastAPI Application Server"]
-    API -->|Async Tasks| Celery["Celery Task Queue (Redis / Memory)"]
-    API -->|Session / ORM| DB[("SQL Database (SQLite / Postgres)")]
-    
-    Celery -->|Inference| MusicGen["MusicGen (Small / Melody)"]
-    Celery -->|Stem Extraction| Demucs["Demucs (HTDemucs)"]
-    Celery -->|Acoustic Analysis| Librosa["Librosa Audio Engine"]
-    
-    MusicGen -->|Render WAV| Static["Static Storage (/beat_outputs)"]
-    Demucs -->|Stems| StaticStems["Stem Storage (/stems_outputs)"]
-    Static --> Client
-    StaticStems --> Client
-```
-
----
-
-## 📂 Project Structure
-
-```
-melodify_Tune_AI/
-├── frontend/               # Web DAW UI, Studio, Pages & Canvas Visualizers
-│   ├── index.html          # Landing page & hero audio demo
-│   ├── studio.html         # Multi-track Web DAW, Beat Generator & Stem Editor
-│   ├── dashboard.html      # Creator dashboard & quick project generator
-│   ├── explore.html        # Community discovery & remix feeds
-│   ├── projects.html       # Public project listings & search
-│   ├── repo.html           # Repository view & commit timeline
-│   ├── project_tree.html   # Visual Git audio commit graph
-│   ├── library.html        # User asset library & saved beats
-│   ├── settings.html       # Audio configuration & profile settings
-│   ├── community.html      # Creator profiles & social feed
-│   ├── nav.js              # Shared navigation component
-│   └── visualizer.js       # Real-time 60fps Canvas 2D audio visualizer
-│
-├── backend/                # FastAPI Application Server, Database & Audio Engines
-│   ├── api_server.py       # Core FastAPI REST & SSE Streaming Server
-│   ├── audio_processing.py # Multi-genre synthesis, Demucs splitting & AI mastering
-│   ├── database.py         # SQLAlchemy SQLite/PostgreSQL database engine
-│   ├── models.py           # Database schemas (Users, Repositories, Commits, Stems)
-│   ├── auth.py             # Argon2 password hashing & JWT token handling
-│   ├── celery_worker.py    # Asynchronous job queue for background audio compute
-│   └── run_demucs.py       # Demucs runtime wrapper
-│
-├── ml/                     # Machine Learning & AI Generation Scripts
-│   ├── beat_generator.py   # Standalone MusicGen inference engine
-│   └── setup_musicgen.bat  # Automated model cache downloader
-│
-├── docs/                   # Architectural blueprints & documentation
-├── tests/                  # Verification scripts & audio tests
-├── run.py                  # Single-command launcher (python run.py)
-├── start_server.ps1        # PowerShell server watchdog launcher
-├── install_deps.ps1        # Dependency installer
-├── requirements.txt        # Python dependency manifest
-└── README.md               # Project documentation
-```
+- ✍️ **AI Lyrics & Songwriting Generator** — Structure verses, choruses, and bridges by mood and genre.
 
 ---
 
 ## ⚡ Quickstart Guide
 
-### 1. Run the Platform
-
+### 1. Clone & Install Dependencies
 ```bash
-# Launch the API server and Web DAW
-python run.py
-```
+git clone https://github.com/Kartikkumar251/melodify_Tune_AI.git
+cd melodify_Tune_AI
 
-Open your browser to **[http://localhost:8000/ui/studio.html](http://localhost:8000/ui/studio.html)** to start creating!
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 3. Launch BeatFlow API & Web DAW
-
+### 2. Launch BeatFlow Platform
 ```bash
-python api_server.py
+python run.py
 ```
+Open your browser to:
+- **Studio DAW**: 👉 **[http://localhost:8000/ui/studio.html](http://localhost:8000/ui/studio.html)**
+- **Community Hub**: 👉 **[http://localhost:8000/ui/index.html](http://localhost:8000/ui/index.html)**
 
-Open your browser and navigate to:
-👉 **`http://localhost:8000`**
+### 3. Run Automated Audit & Verification
+To test all 11 endpoints and tools:
+```bash
+python tests/test_audit.py
+```
 
 ---
 
@@ -130,13 +67,17 @@ Open your browser and navigate to:
 | `POST` | `/separate` | 4-stem Demucs separation | Optional |
 | `POST` | `/analyze` | Extract BPM, key, energy, loudness | Public |
 | `POST` | `/master` | -14 LUFS AI Mastering | Public |
-| `POST` | `/audio-to-midi` | Melodic Audio to `.mid` transcription | Public |
+| `POST` | `/tools/fca-optimize` | Encode audio to `.fca` container (Lossless / Perceptual) | Public |
+| `POST` | `/tools/audio-to-midi` | Melodic Audio to `.mid` transcription | Public |
+| `POST` | `/tools/generate-lyrics` | Structured lyrics songwriting engine | Public |
+| `GET` | `/tools/prompt-autocomplete` | Real-time search & prompt autocomplete | Public |
 | `POST` | `/auth/register` | Create user account | Public |
 | `POST` | `/auth/login` | Obtain JWT access token | Public |
 | `GET` | `/projects` | List public audio repositories | Public |
 | `POST` | `/projects` | Create new audio repository | JWT |
 | `POST` | `/projects/{id}/commit` | Commit mix snapshot to project tree | JWT |
 | `POST` | `/projects/{id}/fork` | Fork audio tree into new project | JWT |
+| `GET` | `/projects/{repo_id}/commits/{commit_id}/export-stems` | Download Stem Pack ZIP archive | Public |
 
 ---
 
