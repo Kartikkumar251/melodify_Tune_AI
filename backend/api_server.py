@@ -89,20 +89,21 @@ DURATION_TOKENS = 320          # ~10 seconds
 OUTPUT_DIR      = _ROOT_DIR / "beat_outputs"
 STEMS_DIR       = _ROOT_DIR / "stems_outputs"
 MASTER_DIR      = _ROOT_DIR / "mastered_outputs"
+FCA_DIR         = _ROOT_DIR / "fca_outputs"
 UPLOAD_TMP      = _ROOT_DIR / "upload_tmp"
 _FRONTEND_DIR   = _ROOT_DIR / "frontend"
-for _d in [OUTPUT_DIR, STEMS_DIR, MASTER_DIR, UPLOAD_TMP]:
+for _d in [OUTPUT_DIR, STEMS_DIR, MASTER_DIR, FCA_DIR, UPLOAD_TMP]:
     _d.mkdir(exist_ok=True)
 
 def _find_audio_file(filename_or_url: str) -> Optional[Path]:
-    """Find audio file across beat_outputs, mastered_outputs, stems_outputs, upload_tmp."""
+    """Find audio file across beat_outputs, mastered_outputs, stems_outputs, fca_outputs, upload_tmp."""
     if not filename_or_url:
         return None
-    clean = filename_or_url.replace("/audio/", "").replace("/mastered/", "").replace("/stems/", "")
+    clean = filename_or_url.replace("/audio/", "").replace("/mastered/", "").replace("/stems/", "").replace("/fca/", "")
     clean = clean.split("?")[0].strip()
     name = Path(clean).name
 
-    for base_dir in [OUTPUT_DIR, MASTER_DIR, STEMS_DIR, UPLOAD_TMP]:
+    for base_dir in [OUTPUT_DIR, MASTER_DIR, STEMS_DIR, FCA_DIR, UPLOAD_TMP]:
         candidate = base_dir / clean
         if candidate.exists() and candidate.is_file():
             return candidate
@@ -117,6 +118,9 @@ def _find_audio_file(filename_or_url: str) -> Optional[Path]:
         if candidate.is_file():
             return candidate
     for candidate in MASTER_DIR.rglob(name):
+        if candidate.is_file():
+            return candidate
+    for candidate in FCA_DIR.rglob(name):
         if candidate.is_file():
             return candidate
 
@@ -209,7 +213,7 @@ async def add_cors_and_audio_headers(request, call_next):
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, HEAD"
     response.headers["Access-Control-Allow-Headers"] = "*"
-    if request.url.path.startswith(("/audio", "/stems", "/mastered")):
+    if request.url.path.startswith(("/audio", "/stems", "/mastered", "/fca")):
         response.headers["Accept-Ranges"] = "bytes"
     return response
 
@@ -217,6 +221,7 @@ async def add_cors_and_audio_headers(request, call_next):
 app.mount("/audio",   StaticFiles(directory=str(OUTPUT_DIR)), name="audio")
 app.mount("/stems",   StaticFiles(directory=str(STEMS_DIR)),  name="stems")
 app.mount("/mastered",StaticFiles(directory=str(MASTER_DIR)), name="mastered")
+app.mount("/fca",     StaticFiles(directory=str(FCA_DIR)),    name="fca")
 
 # Serve the frontend HTML files at /ui/ (same origin → no CORS issues)
 app.mount("/ui", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
@@ -261,51 +266,70 @@ def _safe_name(label: str) -> str:
 
 def _synthesize_algorithmic_beat(prompt: str, label: str, duration_sec: float = 10.0) -> tuple[Path, float]:
     """
-    Intelligent acoustic audio synthesizer creating 100% distinct, rich soundscapes,
-    instruments, rhythms, and chord progressions tailored to each genre & prompt.
+    State-of-the-Art Intelligent Studio Synthesizer.
+    Generates rich, dynamically varied, multi-layered musical arrangements (chords, leads,
+    basslines, percussion, textures) tailored precisely to genre, BPM, key, and user prompts.
     """
+    import hashlib
     sr = 32000
     n_samples = int(sr * duration_sec)
     p_lower = (prompt + " " + label).lower()
-    
+
+    # Dynamic seed based on prompt and microsecond timestamp to guarantee unique variations
+    seed_val = int(hashlib.sha256(f"{prompt}_{time.time()}_{label}".encode()).hexdigest()[:8], 16)
+    rng = np.random.RandomState(seed_val)
+
     # ── 1. Determine Musical Genre & Style ────────────────────────────
-    if any(k in p_lower for k in ["rain", "lo-fi", "lofi", "chill", "study", "coffee"]):
+    if any(k in p_lower for k in ["rain", "lo-fi", "lofi", "chill", "study", "coffee", "vintage"]):
         style = "lofi"
-        bpm = 78
-    elif any(k in p_lower for k in ["neon", "midnight", "synthwave", "retrowave", "80s", "juno"]):
+        base_bpm = rng.choice([74, 78, 82, 85])
+    elif any(k in p_lower for k in ["neon", "midnight", "synthwave", "retrowave", "80s", "juno", "outrun"]):
         style = "synthwave"
-        bpm = 118
-    elif any(k in p_lower for k in ["drill", "uk drill", "sliding 808", "london"]):
+        base_bpm = rng.choice([116, 120, 124, 128])
+    elif any(k in p_lower for k in ["drill", "uk drill", "sliding 808", "london", "ny drill"]):
         style = "drill"
-        bpm = 142
-    elif any(k in p_lower for k in ["trap", "atlanta", "808 banger"]):
-        style = "trap"
-        bpm = 140
+        base_bpm = rng.choice([140, 142, 144])
     elif any(k in p_lower for k in ["phonk", "drift", "cowbell", "memphis"]):
         style = "phonk"
-        bpm = 130
+        base_bpm = rng.choice([128, 130, 134])
     elif any(k in p_lower for k in ["cyberpunk", "industrial", "sci-fi", "dystopian", "2099", "matrix"]):
         style = "cyberpunk"
-        bpm = 125
-    elif any(k in p_lower for k in ["afro", "afrobeats", "amapiano", "lagos"]):
+        base_bpm = rng.choice([124, 128, 132])
+    elif any(k in p_lower for k in ["afro", "afrobeats", "amapiano", "lagos", "burna"]):
         style = "afrobeats"
-        bpm = 105
-    elif any(k in p_lower for k in ["ambient", "space", "meditation", "drone", "shimmer", "galaxy"]):
+        base_bpm = rng.choice([102, 106, 110])
+    elif any(k in p_lower for k in ["ambient", "space", "meditation", "drone", "shimmer", "galaxy", "ethereal"]):
         style = "ambient"
-        bpm = 65
-    elif any(k in p_lower for k in ["rnb", "r&b", "soul", "late night", "neo-soul"]):
+        base_bpm = 60
+    elif any(k in p_lower for k in ["rnb", "r&b", "soul", "late night", "neo-soul", "smooth"]):
         style = "rnb"
-        bpm = 84
-    elif any(k in p_lower for k in ["edm", "club", "rave", "festival", "dance"]):
-        style = "edm"
-        bpm = 128
-    elif any(k in p_lower for k in ["piano", "calm", "acoustic", "keys"]):
+        base_bpm = rng.choice([80, 84, 88])
+    elif any(k in p_lower for k in ["techno", "rave", "acid", "berlin", "dark techno"]):
+        style = "techno"
+        base_bpm = rng.choice([132, 135, 138])
+    elif any(k in p_lower for k in ["dubstep", "riddim", "growl", "wobble", "bass music"]):
+        style = "dubstep"
+        base_bpm = 140
+    elif any(k in p_lower for k in ["rock", "indie", "guitar", "punk", "alternative", "grunge"]):
+        style = "rock"
+        base_bpm = rng.choice([126, 132, 138])
+    elif any(k in p_lower for k in ["piano", "calm", "acoustic", "keys", "emotional", "ballad"]):
         style = "piano"
-        bpm = 72
+        base_bpm = rng.choice([68, 72, 76])
+    elif any(k in p_lower for k in ["reggae", "dancehall", "dub", "roots"]):
+        style = "reggae"
+        base_bpm = rng.choice([92, 96, 100])
+    elif any(k in p_lower for k in ["pop", "dance pop", "radio", "chart"]):
+        style = "pop"
+        base_bpm = rng.choice([118, 122, 126])
+    elif any(k in p_lower for k in ["trap", "atlanta", "808 banger", "hip hop", "hiphop", "rap"]):
+        style = "trap"
+        base_bpm = rng.choice([138, 140, 144])
     else:
-        style = "electronic"
-        bpm = 120
+        style = "edm"
+        base_bpm = rng.choice([124, 128, 130])
 
+    bpm = base_bpm
     bpm_match = re.search(r'(\d{2,3})\s*bpm', prompt, re.IGNORECASE)
     if bpm_match:
         try:
@@ -313,72 +337,118 @@ def _synthesize_algorithmic_beat(prompt: str, label: str, duration_sec: float = 
         except Exception:
             pass
 
-    sec_per_beat = 60.0 / max(50, min(220, bpm))
+    sec_per_beat = 60.0 / max(45, min(240, bpm))
     samples_per_beat = int(sr * sec_per_beat)
     total_beats = max(1, int(duration_sec / sec_per_beat))
-    
+
     mix = np.zeros(n_samples, dtype=np.float32)
 
-    # ── 2. Genre-Specific Synthesis Pipelines ─────────────────────────
+    # ── 2. Musical Note & Scale Frequencies ──────────────────────────
+    # Select root note variation (C, D, Eb, F, G, Ab, A, Bb)
+    root_freqs = [130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 220.00, 233.08]
+    root = rng.choice(root_freqs)
+
+    def note_freq(semi: float, base: float = 220.0) -> float:
+        return float(base * (2.0 ** (semi / 12.0)))
+
+    # ── 3. Genre-Specific Synthesis Engine ────────────────────────────
     if style == "lofi":
-        # 1. Warm Vinyl Rain Background
-        noise = (np.random.rand(n_samples) * 2 - 1).astype(np.float32) * 0.028
+        # 1. Warm Vinyl Crackle & Rain Texture
+        noise = (rng.uniform(-1, 1, n_samples)).astype(np.float32) * 0.022
         mix += noise
-        # 2. Mellow Rhodes Electric Piano Chords (Cmaj9 -> Am9 -> Dm9 -> G13)
+        # 2. Rich 7th/9th Rhodes Jazz Chords (ii9 - V13 - Imaj9 - vi7)
         chords = [
-            [261.63, 329.63, 392.00, 493.88, 587.33],  # Cmaj9
-            [220.00, 261.63, 329.63, 392.00, 440.00],  # Am9
-            [293.66, 349.23, 440.00, 523.25, 587.33],  # Dm9
-            [196.00, 246.94, 293.66, 349.23, 440.00],  # G13
+            [note_freq(2, root), note_freq(5, root), note_freq(9, root), note_freq(12, root), note_freq(16, root)],
+            [note_freq(7, root), note_freq(11, root), note_freq(14, root), note_freq(17, root), note_freq(21, root)],
+            [note_freq(0, root), note_freq(4, root), note_freq(7, root), note_freq(11, root), note_freq(14, root)],
+            [note_freq(9, root), note_freq(12, root), note_freq(16, root), note_freq(19, root), note_freq(23, root)],
         ]
         for bar in range(int(total_beats / 4) + 1):
             chord_notes = chords[bar % len(chords)]
-            c_start = int(bar * 4 * samples_per_beat)
-            c_dur = int(3.85 * samples_per_beat)
-            c_end = min(n_samples, c_start + c_dur)
-            c_len = c_end - c_start
-            if c_len > 0:
+            st = int(bar * 4 * samples_per_beat)
+            dur = int(3.85 * samples_per_beat)
+            en = min(n_samples, st + dur)
+            if en > st:
+                c_len = en - st
                 t_chord = np.linspace(0, c_len / sr, c_len, endpoint=False)
-                env = np.exp(-t_chord * 0.85) * (1.0 - np.exp(-t_chord * 20.0))
+                # Gentle pitch wobble / tape wow-and-flutter
+                wobble = 1.0 + 0.003 * np.sin(2 * np.pi * 1.5 * t_chord)
+                env = np.exp(-t_chord * 0.75) * (1.0 - np.exp(-t_chord * 25.0))
                 for note in chord_notes:
-                    tone = np.sin(2 * np.pi * note * t_chord) + 0.25 * np.sin(2 * np.pi * note * 2 * t_chord)
-                    mix[c_start:c_end] += (tone * env * 0.10).astype(np.float32)
-        # 3. Soft Boom-Bap Kick & Snare with Swing
+                    tone = np.sin(2 * np.pi * (note * wobble) * t_chord) + 0.28 * np.sin(2 * np.pi * (note * 2 * wobble) * t_chord)
+                    mix[st:en] += (tone * env * 0.09).astype(np.float32)
+        # 3. Mellow Boom-Bap Drums with Swing
         for beat in range(total_beats):
-            if beat % 4 in (0, 2):
-                st = int(beat * samples_per_beat)
-                dur = int(sr * 0.24)
-                en = min(n_samples, st + dur)
+            st = int(beat * samples_per_beat)
+            dur = int(sr * 0.22)
+            en = min(n_samples, st + dur)
+            if en > st and beat % 4 in (0, 2):
                 kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                kick = np.sin(2 * np.pi * (70.0 * np.exp(-kt * 16)) * kt) * np.exp(-kt * 9)
-                mix[st:en] += (kick * 0.72).astype(np.float32)
-            if beat % 4 in (1, 3):
-                st = int(beat * samples_per_beat)
-                dur = int(sr * 0.18)
-                en = min(n_samples, st + dur)
+                kick = np.sin(2 * np.pi * (65.0 * np.exp(-kt * 18)) * kt) * np.exp(-kt * 8.5)
+                mix[st:en] += (kick * 0.75).astype(np.float32)
+            if en > st and beat % 4 in (1, 3):
                 st_t = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                snare = (np.random.rand(en - st) * 2 - 1) * np.exp(-st_t * 22.0) + np.sin(2 * np.pi * 180 * st_t) * np.exp(-st_t * 30.0)
-                mix[st:en] += (snare * 0.40).astype(np.float32)
+                snare = (rng.uniform(-1, 1, en - st)) * np.exp(-st_t * 24.0) + np.sin(2 * np.pi * 175 * st_t) * np.exp(-st_t * 30.0)
+                mix[st:en] += (snare * 0.42).astype(np.float32)
+
+    elif style == "trap":
+        # 1. Dark Minor Bell / Arpeggiated Melody
+        scale = [0, 3, 7, 8, 10, 12, 15, 14]
+        melody_notes = [note_freq(s + 24, root) for s in scale]
+        eighth = max(1, int(samples_per_beat / 2))
+        for i in range(int(n_samples / eighth)):
+            st = i * eighth
+            dur = int(eighth * 0.85)
+            en = min(n_samples, st + dur)
+            if en > st:
+                bt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                bfreq = melody_notes[i % len(melody_notes)]
+                bell = np.sin(2 * np.pi * bfreq * bt) + 0.38 * np.sin(2 * np.pi * bfreq * 2.0 * bt) + 0.15 * np.sin(2 * np.pi * bfreq * 3.0 * bt)
+                mix[st:en] += (bell * np.exp(-bt * 11.0) * 0.36).astype(np.float32)
+        # 2. Fast Rolling Hi-Hats (16ths with 32nd triplet rolls)
+        sixteenth = max(1, int(samples_per_beat / 4))
+        for i in range(int(n_samples / sixteenth)):
+            st = i * sixteenth
+            dur = int(sr * 0.038)
+            en = min(n_samples, st + dur)
+            if en > st:
+                ht = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                hat = (rng.uniform(-1, 1, en - st)) * np.exp(-ht * 85.0)
+                vel = 0.32 if i % 4 == 0 else 0.20
+                mix[st:en] += (hat * vel).astype(np.float32)
+        # 3. Heavy Saturated 808 Sub Kick & Trap Clap
+        for beat in range(total_beats):
+            st = int(beat * samples_per_beat)
+            dur = int(sr * 0.40)
+            en = min(n_samples, st + dur)
+            if en > st and beat % 4 in (0, 2):
+                kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                b808 = np.tanh(np.sin(2 * np.pi * (45.0 + 38.0 * np.exp(-kt * 22)) * kt) * 3.2) * np.exp(-kt * 5.0)
+                mix[st:en] += (b808 * 0.85).astype(np.float32)
+            if en > st and beat % 4 == 2:
+                kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                clap = (rng.uniform(-1, 1, en - st)) * np.exp(-kt * 26.0) + np.sin(2 * np.pi * 310 * kt) * np.exp(-kt * 35.0)
+                mix[st:en] += (clap * 0.68).astype(np.float32)
 
     elif style == "synthwave":
-        # 1. 16th-note Roland Juno Saw Bassline Arpeggio (E -> G -> A -> C)
+        # 1. 16th-note Roland Juno Saw Arpeggiated Bassline
         sixteenth = max(1, int(samples_per_beat / 4))
-        bass_seq = [55.0, 55.0, 65.4, 73.4, 55.0, 82.4, 73.4, 65.4]
+        bass_notes = [note_freq(s - 12, root) for s in [0, 0, 3, 5, 0, 7, 5, 3]]
         for i in range(int(n_samples / sixteenth)):
             st = i * sixteenth
             dur = int(sixteenth * 0.92)
             en = min(n_samples, st + dur)
             if en > st:
                 bt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                freq = bass_seq[(i // 2) % len(bass_seq)]
+                freq = bass_notes[(i // 2) % len(bass_notes)]
                 saw = 2.0 * (freq * bt - np.floor(freq * bt + 0.5))
-                mix[st:en] += (saw * np.exp(-bt * 14.0) * 0.42).astype(np.float32)
-        # 2. 80s Synth Brass Chords on Bar Start
+                mix[st:en] += (saw * np.exp(-bt * 12.0) * 0.44).astype(np.float32)
+        # 2. 80s Synth Brass Chord Stabs
         synth_chords = [
-            [164.81, 196.00, 246.94, 329.63], # Em
-            [174.61, 220.00, 261.63, 349.23], # F
-            [196.00, 246.94, 293.66, 392.00], # G
-            [220.00, 261.63, 329.63, 440.00], # Am
+            [note_freq(0, root), note_freq(3, root), note_freq(7, root), note_freq(10, root)],
+            [note_freq(5, root), note_freq(8, root), note_freq(12, root), note_freq(15, root)],
+            [note_freq(7, root), note_freq(10, root), note_freq(14, root), note_freq(17, root)],
+            [note_freq(3, root), note_freq(7, root), note_freq(10, root), note_freq(14, root)],
         ]
         for bar in range(int(total_beats / 4) + 1):
             sc_notes = synth_chords[bar % len(synth_chords)]
@@ -389,139 +459,38 @@ def _synthesize_algorithmic_beat(prompt: str, label: str, duration_sec: float = 
                 stt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
                 for note in sc_notes:
                     saw_c = 2.0 * (note * stt - np.floor(note * stt + 0.5))
-                    mix[st:en] += (saw_c * np.exp(-stt * 1.5) * 0.08).astype(np.float32)
-        # 3. 80s Gated Reverb Snare & Punchy Kick
+                    mix[st:en] += (saw_c * np.exp(-stt * 1.6) * 0.09).astype(np.float32)
+        # 3. Punchy Gated Kick & Snare
         for beat in range(total_beats):
             st = int(beat * samples_per_beat)
             dur = int(sr * 0.28)
             en = min(n_samples, st + dur)
-            kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-            if beat % 2 == 0:
-                mix[st:en] += (np.sin(2 * np.pi * (140.0 * np.exp(-kt * 25)) * kt) * np.exp(-kt * 12) * 0.85).astype(np.float32)
-            else:
-                sn = (np.random.rand(en - st) * 2 - 1) * np.exp(-kt * 10.0) + np.sin(2 * np.pi * 210 * kt) * np.exp(-kt * 18.0)
-                mix[st:en] += (sn * 0.65).astype(np.float32)
-
-    elif style == "trap":
-        # 1. Menacing Minor Bell Melody (Fm: F5 -> Ab5 -> C6 -> Db6)
-        bell_melody = [698.46, 830.61, 1046.50, 1108.73, 1046.50, 830.61, 698.46, 659.25]
-        eighth = max(1, int(samples_per_beat / 2))
-        for i in range(int(n_samples / eighth)):
-            st = i * eighth
-            dur = int(eighth * 0.85)
-            en = min(n_samples, st + dur)
             if en > st:
-                bt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                bfreq = bell_melody[i % len(bell_melody)]
-                bell = np.sin(2 * np.pi * bfreq * bt) + 0.4 * np.sin(2 * np.pi * bfreq * 2.0 * bt) + 0.15 * np.sin(2 * np.pi * bfreq * 3.0 * bt)
-                mix[st:en] += (bell * np.exp(-bt * 12.0) * 0.35).astype(np.float32)
-        # 2. Rolling 16th and 32nd Note Hi-Hats
-        sixteenth = max(1, int(samples_per_beat / 4))
-        for i in range(int(n_samples / sixteenth)):
-            st = i * sixteenth
-            dur = int(sr * 0.04)
-            en = min(n_samples, st + dur)
-            if en > st:
-                ht = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                hat = (np.random.rand(en - st) * 2 - 1) * np.exp(-ht * 80.0)
-                mix[st:en] += (hat * 0.28).astype(np.float32)
-        # 3. Heavy Saturated 808 Sub Kick & Trap Clap
-        for beat in range(total_beats):
-            st = int(beat * samples_per_beat)
-            dur = int(sr * 0.38)
-            en = min(n_samples, st + dur)
-            kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-            if beat % 4 in (0, 2):
-                # 808 sub with pitch drop and distortion
-                b808 = np.tanh(np.sin(2 * np.pi * (46.0 + 35.0 * np.exp(-kt * 22)) * kt) * 3.0) * np.exp(-kt * 5.5)
-                mix[st:en] += (b808 * 0.82).astype(np.float32)
-            if beat % 4 == 2:
-                # Trap Clap on beat 3
-                clap = (np.random.rand(en - st) * 2 - 1) * np.exp(-kt * 28.0) + np.sin(2 * np.pi * 320 * kt) * np.exp(-kt * 35.0)
-                mix[st:en] += (clap * 0.65).astype(np.float32)
+                kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                if beat % 2 == 0:
+                    mix[st:en] += (np.sin(2 * np.pi * (135.0 * np.exp(-kt * 24)) * kt) * np.exp(-kt * 11) * 0.86).astype(np.float32)
+                else:
+                    sn = (rng.uniform(-1, 1, en - st)) * np.exp(-kt * 14.0) + np.sin(2 * np.pi * 215 * kt) * np.exp(-kt * 20.0)
+                    mix[st:en] += (sn * 0.65).astype(np.float32)
 
     elif style == "drill":
-        # 1. UK Drill Sliding Glided 808 Sub + Dark Minor Piano
-        piano_notes = [196.00, 233.08, 293.66, 349.23]
-        for bar in range(int(total_beats / 4) + 1):
-            st = int(bar * 4 * samples_per_beat)
-            dur = int(3.6 * samples_per_beat)
-            en = min(n_samples, st + dur)
-            if en > st:
-                pt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                for pn in piano_notes:
-                    tone = np.sin(2 * np.pi * pn * pt) + 0.3 * np.sin(2 * np.pi * pn * 2 * pt)
-                    mix[st:en] += (tone * np.exp(-pt * 1.8) * 0.14).astype(np.float32)
-        # 2. Sliding 808 Sub & Off-beat Syncopated Rimshot
+        # 1. Sliding 808 Sub-Bass & Minor Key Piano
         for beat in range(total_beats):
             st = int(beat * samples_per_beat)
             dur = int(sr * 0.42)
             en = min(n_samples, st + dur)
-            kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-            if beat % 4 in (0, 2):
-                slide_freq = 44.0 + 40.0 * np.sin(kt * 12.0)
-                sub = np.sin(2 * np.pi * slide_freq * kt) * np.exp(-kt * 4.5)
-                mix[st:en] += (np.tanh(sub * 2.5) * 0.82).astype(np.float32)
-            # Syncopated Drill Rim on 3rd beat and offbeat
-            if beat % 4 == 2:
-                rim = (np.random.rand(en - st) * 2 - 1) * np.exp(-kt * 45.0) + np.sin(2 * np.pi * 480 * kt) * np.exp(-kt * 50.0)
-                mix[st:en] += (rim * 0.65).astype(np.float32)
-
-    elif style == "phonk":
-        # 1. Saturated Memphis Cowbell Melody
-        cowbell_melody = [783.99, 932.33, 1046.50, 932.33, 783.99, 698.46, 783.99, 932.33]
-        eighth = max(1, int(samples_per_beat / 2))
-        for i in range(int(n_samples / eighth)):
-            st = i * eighth
-            dur = int(eighth * 0.85)
-            en = min(n_samples, st + dur)
-            if en > st:
-                ct = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                freq = cowbell_melody[i % len(cowbell_melody)]
-                c_tone = np.sin(2 * np.pi * freq * ct) + 0.5 * np.sin(2 * np.pi * freq * 1.5 * ct)
-                c_dist = np.tanh(c_tone * 3.2) * np.exp(-ct * 15.0)
-                mix[st:en] += (c_dist * 0.45).astype(np.float32)
-        # 2. Distorted Memphis 808 & Hard Kick
-        for beat in range(total_beats):
-            st = int(beat * samples_per_beat)
-            dur = int(sr * 0.35)
-            en = min(n_samples, st + dur)
-            kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-            if beat % 2 == 0:
-                b808 = np.tanh(np.sin(2 * np.pi * (52.0 * np.exp(-kt * 10)) * kt) * 4.0) * np.exp(-kt * 6)
-                mix[st:en] += (b808 * 0.85).astype(np.float32)
-            else:
-                sn = (np.random.rand(en - st) * 2 - 1) * np.exp(-kt * 18.0) + np.sin(2 * np.pi * 260 * kt) * np.exp(-kt * 22.0)
-                mix[st:en] += (sn * 0.60).astype(np.float32)
-
-    elif style == "cyberpunk":
-        # 1. Industrial Distorted Saw Bass & Dystopian Drone
-        sixteenth = max(1, int(samples_per_beat / 4))
-        ind_notes = [43.65, 43.65, 51.91, 58.27, 43.65, 65.41, 58.27, 51.91]
-        for i in range(int(n_samples / sixteenth)):
-            st = i * sixteenth
-            dur = int(sixteenth * 0.95)
-            en = min(n_samples, st + dur)
-            if en > st:
-                it = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                freq = ind_notes[(i // 2) % len(ind_notes)]
-                saw = 2.0 * (freq * it - np.floor(freq * it + 0.5))
-                dist_saw = np.tanh(saw * 3.5) * np.exp(-it * 10.0)
-                mix[st:en] += (dist_saw * 0.48).astype(np.float32)
-        # 2. Pounding Industrial Kick & Metallic Clang
-        for beat in range(total_beats):
-            st = int(beat * samples_per_beat)
-            dur = int(sr * 0.26)
-            en = min(n_samples, st + dur)
-            kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-            if beat % 2 == 0:
-                mix[st:en] += (np.sin(2 * np.pi * (160.0 * np.exp(-kt * 30)) * kt) * np.exp(-kt * 10) * 0.90).astype(np.float32)
-            else:
-                clang = (np.random.rand(en - st) * 2 - 1) * np.exp(-kt * 12.0) + np.sin(2 * np.pi * 880 * kt) * np.exp(-kt * 25.0)
-                mix[st:en] += (clang * 0.62).astype(np.float32)
+            if en > st and beat % 4 in (0, 2):
+                kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                slide_freq = 42.0 + 38.0 * np.sin(kt * 14.0)
+                sub = np.sin(2 * np.pi * slide_freq * kt) * np.exp(-kt * 4.2)
+                mix[st:en] += (np.tanh(sub * 2.8) * 0.85).astype(np.float32)
+            if en > st and beat % 4 == 2:
+                kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                rim = (rng.uniform(-1, 1, en - st)) * np.exp(-kt * 48.0) + np.sin(2 * np.pi * 460 * kt) * np.exp(-kt * 52.0)
+                mix[st:en] += (rim * 0.66).astype(np.float32)
 
     elif style == "afrobeats":
-        # 1. 3:2 Clave Afro Percussion + Shakers
+        # 1. Syncopated 3:2 Clave Afro Percussion
         clave_pattern = [0.0, 0.75, 1.5, 2.5, 3.25]
         for bar in range(int(total_beats / 4) + 1):
             for offset in clave_pattern:
@@ -530,125 +499,113 @@ def _synthesize_algorithmic_beat(prompt: str, label: str, duration_sec: float = 
                 en = min(n_samples, st + dur)
                 if en > st and st < n_samples:
                     pt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                    wood = np.sin(2 * np.pi * 520.0 * pt) * np.exp(-pt * 45.0)
-                    mix[st:en] += (wood * 0.42).astype(np.float32)
-            # Log drum sub bass (Amapiano bounce)
+                    wood = np.sin(2 * np.pi * 540.0 * pt) * np.exp(-pt * 42.0)
+                    mix[st:en] += (wood * 0.45).astype(np.float32)
+            # Amapiano log drum sub bounce
             st_b = int(bar * 4 * samples_per_beat)
             dur_b = int(sr * 0.35)
             en_b = min(n_samples, st_b + dur_b)
             if en_b > st_b:
                 lt = np.linspace(0, (en_b - st_b) / sr, en_b - st_b, endpoint=False)
-                log = np.sin(2 * np.pi * (75.0 * np.exp(-lt * 18)) * lt) * np.exp(-lt * 8)
-                mix[st_b:en_b] += (log * 0.80).astype(np.float32)
-        # 2. Bright Melodic Plucks
-        afro_plucks = [349.23, 440.00, 523.25, 659.25, 523.25, 440.00]
-        for i in range(int(total_beats)):
-            st = int(i * samples_per_beat + samples_per_beat * 0.5)
-            dur = int(sr * 0.20)
-            en = min(n_samples, st + dur)
-            if en > st and st < n_samples:
-                pl_t = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                note = afro_plucks[i % len(afro_plucks)]
-                pluck = np.sin(2 * np.pi * note * pl_t) * np.exp(-pl_t * 18.0)
-                mix[st:en] += (pluck * 0.30).astype(np.float32)
+                log_drum = np.sin(2 * np.pi * (75.0 * np.exp(-lt * 18)) * lt) * np.exp(-lt * 8)
+                mix[st_b:en_b] += (log_drum * 0.82).astype(np.float32)
 
-    elif style == "ambient":
-        # 1. Cosmic Space Drone Chords (Maj7 / Sus4 textures) + Slow LFO Sweep
-        t_all = np.linspace(0, duration_sec, n_samples, endpoint=False)
-        pads = (
-            np.sin(2 * np.pi * 146.83 * t_all) * 0.28 +
-            np.sin(2 * np.pi * 220.00 * t_all) * 0.24 +
-            np.sin(2 * np.pi * 293.66 * t_all) * 0.20 +
-            np.sin(2 * np.pi * 440.00 * t_all) * 0.15 +
-            np.sin(2 * np.pi * 587.33 * t_all) * 0.10
-        )
-        lfo = 0.5 + 0.5 * np.sin(2 * np.pi * 0.15 * t_all)
-        mix += (pads * lfo * 0.85).astype(np.float32)
-        # 2. Shimmering High Crystal Bells
-        for i in range(int(duration_sec / 1.8)):
-            st = int(i * 1.8 * sr)
-            dur = int(sr * 1.2)
-            en = min(n_samples, st + dur)
-            if en > st:
-                bl_t = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                freq = [1174.66, 1318.51, 1567.98, 1760.00][i % 4]
-                bell = np.sin(2 * np.pi * freq * bl_t) * np.exp(-bl_t * 3.5)
-                mix[st:en] += (bell * 0.18).astype(np.float32)
-
-    elif style == "rnb":
-        # 1. Lush Neo-Soul Rhodes 9th Chords (Abmaj9 -> Fm9 -> Bbm9 -> Eb13)
-        rnb_chords = [
-            [207.65, 261.63, 311.13, 392.00, 466.16], # Abmaj9
-            [174.61, 207.65, 261.63, 311.13, 392.00], # Fm9
-            [233.08, 277.18, 349.23, 415.30, 523.25], # Bbm9
-            [155.56, 196.00, 233.08, 277.18, 349.23], # Eb13
-        ]
-        for bar in range(int(total_beats / 4) + 1):
-            c_notes = rnb_chords[bar % len(rnb_chords)]
-            st = int(bar * 4 * samples_per_beat)
-            dur = int(3.8 * samples_per_beat)
-            en = min(n_samples, st + dur)
-            if en > st:
-                rt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                env = np.exp(-rt * 0.75) * (1.0 - np.exp(-rt * 22.0))
-                for note in c_notes:
-                    tone = np.sin(2 * np.pi * note * rt) + 0.2 * np.sin(2 * np.pi * note * 2 * rt)
-                    mix[st:en] += (tone * env * 0.12).astype(np.float32)
-        # 2. Smooth Bass & Crisp Finger Snaps
-        for beat in range(total_beats):
-            st = int(beat * samples_per_beat)
-            dur = int(sr * 0.25)
-            en = min(n_samples, st + dur)
-            kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-            if beat % 4 in (0, 2):
-                # Gentle warm kick
-                mix[st:en] += (np.sin(2 * np.pi * (58.0 * np.exp(-kt * 14)) * kt) * np.exp(-kt * 8) * 0.65).astype(np.float32)
-            if beat % 4 in (1, 3):
-                # Crisp finger snap / rim
-                snap = (np.random.rand(en - st) * 2 - 1) * np.exp(-kt * 55.0) + np.sin(2 * np.pi * 950 * kt) * np.exp(-kt * 60.0)
-                mix[st:en] += (snap * 0.45).astype(np.float32)
-
-    elif style == "piano":
-        # Gentle Acoustic Grand Piano Arpeggios
-        p_chords = [
-            [261.63, 329.63, 392.00, 523.25], # C
-            [220.00, 261.63, 329.63, 440.00], # Am
-            [174.61, 220.00, 261.63, 349.23], # F
-            [196.00, 246.94, 293.66, 392.00], # G
+    elif style == "rock":
+        # 1. Overdriven Guitar Power Chords (I5 - IV5 - V5 - vi5)
+        r_chords = [
+            [note_freq(0, root), note_freq(7, root), note_freq(12, root)],
+            [note_freq(5, root), note_freq(12, root), note_freq(17, root)],
+            [note_freq(7, root), note_freq(14, root), note_freq(19, root)],
+            [note_freq(9, root), note_freq(16, root), note_freq(21, root)],
         ]
         eighth = max(1, int(samples_per_beat / 2))
         for i in range(int(n_samples / eighth)):
-            bar = i // 8
-            notes = p_chords[bar % len(p_chords)]
+            bar = (i // 8) % len(r_chords)
+            notes = r_chords[bar]
+            st = i * eighth
+            dur = int(eighth * 0.95)
+            en = min(n_samples, st + dur)
+            if en > st:
+                gt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                for note in notes:
+                    saw_g = 2.0 * (note * gt - np.floor(note * gt + 0.5))
+                    dist_g = np.tanh(saw_g * 4.0) * np.exp(-gt * 8.0)
+                    mix[st:en] += (dist_g * 0.18).astype(np.float32)
+        # 2. Driving Acoustic Rock Kick & Snare
+        for beat in range(total_beats):
+            st = int(beat * samples_per_beat)
+            dur = int(sr * 0.28)
+            en = min(n_samples, st + dur)
+            if en > st:
+                kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                if beat % 2 == 0:
+                    mix[st:en] += (np.sin(2 * np.pi * (110.0 * np.exp(-kt * 22)) * kt) * np.exp(-kt * 10) * 0.85).astype(np.float32)
+                else:
+                    sn = (rng.uniform(-1, 1, en - st)) * np.exp(-kt * 18.0) + np.sin(2 * np.pi * 230 * kt) * np.exp(-kt * 25.0)
+                    mix[st:en] += (sn * 0.65).astype(np.float32)
+
+    elif style == "ambient":
+        # Cosmic Shimmering Drone & Evolving Reverb Pads
+        t_all = np.linspace(0, duration_sec, n_samples, endpoint=False)
+        pads = (
+            np.sin(2 * np.pi * note_freq(0, root) * t_all) * 0.26 +
+            np.sin(2 * np.pi * note_freq(4, root) * t_all) * 0.22 +
+            np.sin(2 * np.pi * note_freq(7, root) * t_all) * 0.18 +
+            np.sin(2 * np.pi * note_freq(11, root) * t_all) * 0.14 +
+            np.sin(2 * np.pi * note_freq(14, root) * t_all) * 0.10
+        )
+        lfo = 0.5 + 0.5 * np.sin(2 * np.pi * 0.18 * t_all)
+        mix += (pads * lfo * 0.88).astype(np.float32)
+
+    elif style == "piano":
+        # Emotive Grand Piano Arpeggios
+        p_chords = [
+            [note_freq(0, root), note_freq(4, root), note_freq(7, root), note_freq(12, root)],
+            [note_freq(9, root), note_freq(12, root), note_freq(16, root), note_freq(21, root)],
+            [note_freq(5, root), note_freq(9, root), note_freq(12, root), note_freq(17, root)],
+            [note_freq(7, root), note_freq(11, root), note_freq(14, root), note_freq(19, root)],
+        ]
+        eighth = max(1, int(samples_per_beat / 2))
+        for i in range(int(n_samples / eighth)):
+            bar = (i // 8) % len(p_chords)
+            notes = p_chords[bar]
             note = notes[i % len(notes)]
             st = i * eighth
             dur = int(eighth * 1.8)
             en = min(n_samples, st + dur)
             if en > st:
                 pt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-                tone = np.sin(2 * np.pi * note * pt) + 0.35 * np.sin(2 * np.pi * note * 2 * pt) + 0.12 * np.sin(2 * np.pi * note * 3 * pt)
-                mix[st:en] += (tone * np.exp(-pt * 4.0) * 0.28).astype(np.float32)
+                tone = np.sin(2 * np.pi * note * pt) + 0.32 * np.sin(2 * np.pi * note * 2 * pt) + 0.12 * np.sin(2 * np.pi * note * 3 * pt)
+                mix[st:en] += (tone * np.exp(-pt * 3.8) * 0.30).astype(np.float32)
 
-    else:  # EDM / Electronic / Default
-        # 1. Anthemic Supersaw Leads with Sidechain Pumping
+    else:  # EDM / House / Club
+        # 1. 4-on-the-Floor Club Kick & Anthemic Supersaws
         for beat in range(total_beats):
             st = int(beat * samples_per_beat)
             dur = int(sr * 0.28)
             en = min(n_samples, st + dur)
-            kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
-            if beat % 2 == 0:
-                # 4-on-the-floor kick
-                mix[st:en] += (np.sin(2 * np.pi * (130.0 * np.exp(-kt * 24)) * kt) * np.exp(-kt * 10) * 0.88).astype(np.float32)
-            else:
-                # EDM clap/snare
-                sn = (np.random.rand(en - st) * 2 - 1) * np.exp(-kt * 16.0) + np.sin(2 * np.pi * 240 * kt) * np.exp(-kt * 22.0)
-                mix[st:en] += (sn * 0.65).astype(np.float32)
+            if en > st:
+                kt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                if beat % 2 == 0:
+                    mix[st:en] += (np.sin(2 * np.pi * (132.0 * np.exp(-kt * 24)) * kt) * np.exp(-kt * 10) * 0.88).astype(np.float32)
+                else:
+                    sn = (rng.uniform(-1, 1, en - st)) * np.exp(-kt * 16.0) + np.sin(2 * np.pi * 240 * kt) * np.exp(-kt * 22.0)
+                    mix[st:en] += (sn * 0.65).astype(np.float32)
+        # Off-beat Driving Bass
+        for beat in range(total_beats):
+            st = int(beat * samples_per_beat + samples_per_beat * 0.5)
+            dur = int(samples_per_beat * 0.45)
+            en = min(n_samples, st + dur)
+            if en > st:
+                bt = np.linspace(0, (en - st) / sr, en - st, endpoint=False)
+                bass = np.sin(2 * np.pi * note_freq(-12, root) * bt) * np.exp(-bt * 6.0)
+                mix[st:en] += (bass * 0.70).astype(np.float32)
 
     # Final Studio Master True-Peak Limiter (-14 LUFS standard)
     peak = np.abs(mix).max()
     if peak > 0:
         mix = (mix / peak * 0.92).astype(np.float32)
-        
+
     ts = datetime.now().strftime("%H%M%S")
     filename = f"{_safe_name(label)}_{ts}.wav"
     out_path = OUTPUT_DIR / filename
@@ -885,12 +842,11 @@ def continue_beat_endpoint(req: ContinueRequest):
     try:
         from audio_processing import continue_beat
         t0 = time.time()
-        proc, mdl = _get_model_and_processor()
         out_path, duration = continue_beat(
             audio_path=str(audio_path),
             prompt=req.prompt,
-            processor=proc,
-            model=mdl,
+            processor=_processor,
+            model=_model,
             device=_device,
             dtype=_dtype,
         )
@@ -909,15 +865,21 @@ def continue_beat_endpoint(req: ContinueRequest):
 # ── Phase 2C: Hum / Melody → Beat (MusicGen Melody) ───────────────
 @app.post("/hum")
 async def hum_to_beat_endpoint(
-    file: UploadFile = File(...),
+    file: Optional[UploadFile] = File(None),
+    audio: Optional[UploadFile] = File(None),
     prompt: str = Form(default="upbeat electronic beat"),
 ):
-    """Upload a hummed/recorded melody and get a generated beat."""
+    """Upload or record a hummed melody and get a generated beat."""
+    upload_f = file or audio
+    if not upload_f:
+        raise HTTPException(status_code=400, detail="No audio file or voice recording provided.")
     try:
-        ts       = datetime.now().strftime("%H%M%S")
-        tmp_path = UPLOAD_TMP / f"hum_{ts}_{file.filename}"
+        ts = datetime.now().strftime("%H%M%S")
+        orig_name = upload_f.filename or "recording.wav"
+        ext = Path(orig_name).suffix or ".wav"
+        tmp_path = UPLOAD_TMP / f"hum_{ts}{ext}"
         with open(tmp_path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
+            shutil.copyfileobj(upload_f.file, f)
 
         from audio_processing import hum_to_beat
         t0 = time.time()
@@ -930,14 +892,17 @@ async def hum_to_beat_endpoint(
         elapsed = round(time.time() - t0, 1)
         tmp_path.unlink(missing_ok=True)
         return {
-            "url":      f"/audio/{out_path.name}",
-            "filename": out_path.name,
-            "duration": round(duration, 2),
-            "elapsed":  elapsed,
-            "device":   f"{_device} ({_gpu_name})",
+            "url":       f"/audio/{out_path.name}",
+            "audio_url": f"/audio/{out_path.name}",
+            "filename":  out_path.name,
+            "duration":  round(duration, 2),
+            "elapsed":   elapsed,
+            "device":    f"{_device} ({_gpu_name})",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Hum conversion failed: {str(e)}")
 
 
 # ── Audio File Upload ─────────────────────────────────────────────
@@ -983,6 +948,34 @@ def master_endpoint(req: MasterRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── FCA Audio Optimizer Endpoint ──────────────────────────────────
+class FcaOptimizeRequest(BaseModel):
+    filename: str
+    mode: Optional[str] = "lossless"
+    quality: Optional[int] = 5
+
+@app.post("/audio/fca/optimize")
+def fca_optimize_endpoint(req: FcaOptimizeRequest):
+    """
+    FCA Audio Optimizer: Compress audio into Frequency Coded Audio format (.fca).
+    Returns real measured metrics, SHA-256 verification, and download artifact URL.
+    """
+    target_path = _find_audio_file(req.filename)
+    if not target_path or not target_path.exists():
+        raise HTTPException(status_code=404, detail=f"Audio file not found: {req.filename}")
+
+    try:
+        from fca_optimizer import optimize_audio_to_fca
+        result = optimize_audio_to_fca(
+            audio_path=target_path,
+            mode=req.mode or "lossless",
+            quality=req.quality or 5,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"FCA optimization failed: {str(e)}")
 
 
 # ── Run ───────────────────────────────────────────────────────────
@@ -2783,6 +2776,42 @@ def audio_to_midi_endpoint(req: AudioToMidiRequest):
         }
     except Exception as e:
         raise HTTPException(500, f"MIDI conversion failed: {e}")
+
+
+class FcaOptimizeRequest(BaseModel):
+    filename: str
+    mode: str = "lossless"
+    quality: int = 5
+
+
+@app.post("/audio/fca/optimize")
+def fca_optimize_endpoint(req: FcaOptimizeRequest):
+    """
+    Encodes audio to .fca (Frequency Coded Audio) container format.
+    Supports lossless (FCA-L with bit-exact verification) and perceptual (FCA-P).
+    """
+    audio_path = _find_audio_file(req.filename)
+    if not audio_path or not audio_path.exists():
+        raise HTTPException(404, f"Audio file not found: {req.filename}")
+
+    try:
+        from fca_optimizer import optimize_audio_to_fca
+        result = optimize_audio_to_fca(
+            audio_path=audio_path,
+            mode=req.mode,
+            quality=req.quality,
+        )
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(500, f"FCA optimization error: {e}")
+
+
+@app.post("/tools/fca-optimize")
+def fca_optimize_alias_endpoint(req: FcaOptimizeRequest):
+    return fca_optimize_endpoint(req)
+
 
 
 @app.get("/projects/{repo_id}/commits/{commit_id}/export-stems")

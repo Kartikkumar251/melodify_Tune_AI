@@ -406,12 +406,98 @@ select option{background:var(--bg-overlay);}
 </div>
 <div id="beats-list" style="display:flex;flex-direction:column;gap:12px;"></div>
 
-<!-- Hum input (hidden) -->
-<div id="hum-section" class="glass" style="padding:20px;display:none;" >
-<h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">Hum to Beat</h3>
-<p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Upload an audio file of you humming/singing a melody.</p>
-<input type="file" id="hum-file" accept="audio/*" style="width:100%;font-size:13px;"/>
-<button class="btn btn-orange" style="margin-top:12px;" onclick="submitHum()">Convert to Beat</button>
+<!-- Real-Time Voice Hum to Beat Section -->
+<div id="hum-section" class="glass fade-in" style="padding:22px;display:none;margin-top:14px;border:1px solid rgba(240,136,62,0.4);box-shadow:0 12px 36px rgba(0,0,0,0.45);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:20px;">🎙️</span>
+      <div>
+        <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0;">Real-Time Voice Hum to Beat</h3>
+        <span style="font-size:11px;color:var(--text-muted);">Sing, hum or whistle a melody — Melodify converts it to a full beat!</span>
+      </div>
+    </div>
+    <button class="reset-btn" onclick="closeHumSection()" title="Close">&#10005; Close</button>
+  </div>
+
+  <!-- Mode Selector Tabs: Live Mic vs Upload File -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid var(--border-muted);padding-bottom:10px;">
+    <button type="button" id="hum-tab-mic" class="btn btn-sm btn-orange" onclick="switchHumTab('mic')" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;">
+      <span>🔴 Live Mic Recording</span>
+    </button>
+    <button type="button" id="hum-tab-file" class="btn btn-sm btn-ghost" onclick="switchHumTab('file')" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;border-color:rgba(255,255,255,0.12);">
+      <span>📁 Upload Audio File</span>
+    </button>
+  </div>
+
+  <!-- 1. LIVE MIC RECORDING PANEL -->
+  <div id="hum-mic-panel" style="display:block;">
+    <!-- Live Visualizer Canvas & Time -->
+    <div style="position:relative;width:100%;height:80px;background:var(--bg-inset);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;display:flex;align-items:center;justify-content:center;">
+      <canvas id="hum-viz-canvas" style="width:100%;height:100%;display:block;"></canvas>
+      <div id="hum-viz-placeholder" style="position:absolute;color:var(--text-muted);font-size:12px;pointer-events:none;display:flex;align-items:center;gap:6px;">
+        <span>🎙️ Click "Start Recording" & begin humming your melody…</span>
+      </div>
+      <div id="hum-rec-badge" style="position:absolute;top:8px;right:10px;display:none;align-items:center;gap:6px;background:rgba(248,113,113,0.2);border:1px solid rgba(248,113,113,0.5);padding:2px 8px;border-radius:12px;font-size:11px;color:#f87171;font-weight:700;">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f87171;"></span>
+        <span id="hum-rec-time">00:00</span>
+      </div>
+    </div>
+
+    <!-- Recording Controls -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+      <button type="button" id="hum-start-rec-btn" class="btn btn-orange" onclick="startHumRecording()" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:8px 16px;cursor:pointer;">
+        <span>🔴 Start Recording</span>
+      </button>
+      <button type="button" id="hum-stop-rec-btn" class="btn" onclick="stopHumRecording()" style="display:none;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:8px 16px;background:#f87171;color:#fff;border:none;cursor:pointer;border-radius:6px;">
+        <span>⏹ Stop Recording</span>
+      </button>
+      <button type="button" id="hum-rerec-btn" class="btn btn-ghost" onclick="resetHumRecording()" style="display:none;align-items:center;gap:5px;font-size:12px;cursor:pointer;">
+        <span>↺ Re-Record</span>
+      </button>
+      <span id="hum-rec-status-text" style="font-size:11.5px;color:var(--text-muted);margin-left:auto;">Record up to 30 sec</span>
+    </div>
+
+    <!-- Recorded Audio Player Preview -->
+    <div id="hum-preview-wrap" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;font-weight:600;">Recorded Voice Preview</div>
+      <audio id="hum-audio-preview" controls style="width:100%;height:36px;border-radius:4px;outline:none;"></audio>
+    </div>
+  </div>
+
+  <!-- 2. FILE UPLOAD PANEL -->
+  <div id="hum-file-panel" style="display:none;margin-bottom:12px;">
+    <div style="padding:16px;border:1px dashed var(--border);border-radius:8px;text-align:center;background:var(--bg-inset);">
+      <input type="file" id="hum-file" accept="audio/*" onchange="onHumFileSelected(this)" style="font-size:13px;width:100%;color:var(--text-secondary);"/>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Supported: WAV, MP3, M4A, OGG, WEBM</div>
+    </div>
+  </div>
+
+  <!-- Style / Prompt Controls for Hum-to-Beat -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+    <div class="form-group">
+      <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Beat Style</label>
+      <select id="hum-style-select" style="font-size:13px;">
+        <option value="Trap / Hip-Hop">Trap / Hip-Hop (808 Bass)</option>
+        <option value="Lo-fi Chill">Lo-Fi Chill (Warm Rhodes)</option>
+        <option value="EDM / Club Banger">EDM / Club Banger</option>
+        <option value="Synthwave">Synthwave (80s Neon)</option>
+        <option value="Afrobeats">Afrobeats (Lagos Plucks)</option>
+        <option value="Deep House">Deep House</option>
+        <option value="Piano">Acoustic Piano</option>
+        <option value="Ambient">Ambient Soundscape</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Custom Prompt (Optional)</label>
+      <input type="text" id="hum-prompt-input" placeholder="e.g. punchy drums, synth lead, deep bass" style="font-size:13px;"/>
+    </div>
+  </div>
+
+  <!-- Convert Action Button -->
+  <button type="button" id="hum-convert-btn" class="btn btn-green" onclick="submitHum()" style="width:100%;font-size:13.5px;font-weight:700;padding:10px 0;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+    <span>⚡ Convert Hum to Beat</span>
+  </button>
+  <div class="status-bar" id="hum-status"></div>
 </div>
 </div>
 
@@ -500,6 +586,73 @@ select option{background:var(--bg-overlay);}
 <div id="stems-section" style="display:none;margin-top:12px;">
 <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;">Separated Stems</div>
 <div class="stem-grid" id="stem-grid"></div>
+</div>
+</div>
+
+<!-- FCA Audio Optimizer (Frequency Coded Audio) -->
+<div class="glass side-section fade-in" id="fca-card">
+<div class="section-header">
+  <h3 style="display:flex;align-items:center;gap:6px;">
+    <span>⚡ FCA Audio Optimizer</span>
+    <span style="font-size:9.5px;padding:2px 6px;border-radius:4px;background:rgba(237,232,223,.12);color:var(--text-primary);letter-spacing:0.04em;">RESEARCH CODEC</span>
+  </h3>
+  <button class="reset-btn" onclick="resetFcaOptimizer()" title="Reset FCA optimizer">&#8635; Reset</button>
+</div>
+<p style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">
+  High-efficiency spectral compression with bit-exact lossless verification & perceptual modes.
+</p>
+
+<!-- Compression Mode Selector -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+  <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--bg-inset);border:1px solid var(--border);cursor:pointer;font-size:11.5px;">
+    <input type="radio" name="fca-mode" value="lossless" checked onchange="onFcaModeChange('lossless')">
+    <span><strong>FCA-L</strong> (Lossless)</span>
+  </label>
+  <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--bg-inset);border:1px solid var(--border);cursor:pointer;font-size:11.5px;">
+    <input type="radio" name="fca-mode" value="perceptual" onchange="onFcaModeChange('perceptual')">
+    <span><strong>FCA-P</strong> (Perceptual)</span>
+  </label>
+</div>
+
+<!-- Perceptual Quality Slider (Only visible in FCA-P mode) -->
+<div id="fca-quality-wrap" style="display:none;margin-bottom:10px;padding:8px 10px;background:var(--bg-inset);border-radius:6px;border:1px solid var(--border-muted);">
+  <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-bottom:4px;">
+    <span style="color:var(--text-muted);">Quality Factor</span>
+    <span id="fca-quality-val" style="font-weight:700;color:var(--orange);">Q5 (Balanced)</span>
+  </div>
+  <input type="range" id="fca-quality-slider" min="1" max="10" value="5" style="width:100%;cursor:pointer;" oninput="updateFcaQuality(this.value)">
+  <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px;">
+    <span>Q1 (Max Compression)</span>
+    <span>Q10 (Near Lossless)</span>
+  </div>
+</div>
+
+<!-- Optimize Action Button -->
+<button class="btn btn-green" id="fca-opt-btn" onclick="optimizeFCA()" style="width:100%;font-size:12.5px;padding:8px 0;display:flex;align-items:center;justify-content:center;gap:6px;">
+  <span>⚡ Optimize to .fca</span>
+</button>
+<div class="status-bar" id="fca-status"></div>
+
+<!-- Results Panel (Visible after optimization) -->
+<div id="fca-results-panel" style="display:none;margin-top:10px;padding:10px 12px;background:var(--bg-inset);border-radius:8px;border:1px solid var(--border);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <span id="fca-badge-mode" class="tag" style="font-size:10px;">FCA-L Lossless</span>
+    <span id="fca-verified-badge" style="font-size:10.5px;font-weight:700;color:#50c878;display:flex;align-items:center;gap:3px;">
+      ✓ LOSSLESS VERIFIED
+    </span>
+  </div>
+
+  <div class="analysis-box" style="margin-top:0;margin-bottom:10px;">
+    <div class="row"><span class="analysis-key">Original Size</span><span class="analysis-val" id="fca-res-orig-size" style="color:var(--text-primary);">—</span></div>
+    <div class="row"><span class="analysis-key">FCA Compressed</span><span class="analysis-val" id="fca-res-comp-size" style="color:var(--blue);">—</span></div>
+    <div class="row"><span class="analysis-key">Space Saved</span><span class="analysis-val" id="fca-res-saved" style="color:var(--green-accent);">—</span></div>
+    <div class="row"><span class="analysis-key">Compression Ratio</span><span class="analysis-val" id="fca-res-ratio" style="color:var(--orange);">—</span></div>
+    <div class="row"><span class="analysis-key">SHA-256 Checksum</span><span class="analysis-val" id="fca-res-hash" style="font-family:'Courier New',monospace;font-size:10px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">—</span></div>
+  </div>
+
+  <a id="fca-download-btn" href="#" download class="btn btn-blue" style="width:100%;text-align:center;text-decoration:none;display:block;font-size:12px;padding:6px 0;">
+    ⬇ Download .fca File
+  </a>
 </div>
 </div>
 
@@ -1225,24 +1378,375 @@ async function generateBeat(){
   }
 }
 
-/* ── Hum to Beat ──────────────────────────────────────────────── */
-function triggerHum(){
-  const sec=document.getElementById('hum-section');
-  sec.style.display=sec.style.display==='none'?'block':'none';
+/* ── 🎙️ Real-Time Voice Hum to Beat (Pure PCM WAV Engine) ────────── */
+let _humAudioContext = null;
+let _humMicStream = null;
+let _humScriptProcessor = null;
+let _humAudioSamples = [];
+let _humSampleRate = 44100;
+let _humRecordedWavBlob = null;
+let _humAnalyser = null;
+let _humAnimFrame = null;
+let _humTimer = null;
+let _humSeconds = 0;
+let _humTabMode = 'mic';
+let _isHumRecording = false;
+
+function encodeWAV(samples, sampleRate) {
+  // 1. Calculate peak amplitude for auto-gain leveling
+  let maxAmp = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const abs = Math.abs(samples[i]);
+    if (abs > maxAmp) maxAmp = abs;
+  }
+  // If recording is quiet, boost it to audible level (target 0.75 peak)
+  const boost = (maxAmp > 0.005 && maxAmp < 0.6) ? (0.75 / maxAmp) : 1.0;
+
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+
+  function writeString(offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, 1, true); // 1 Channel (Mono)
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // Byte rate: sampleRate * channels * 2
+  view.setUint16(32, 2, true); // Block align: channels * 2
+  view.setUint16(34, 16, true); // 16-bit
+  writeString(36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+
+  // Write 16-bit PCM samples
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++, offset += 2) {
+    let s = Math.max(-1, Math.min(1, samples[i] * boost));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+
+  return new Blob([view], { type: 'audio/wav' });
 }
+
+function triggerHum(){
+  const sec = document.getElementById('hum-section');
+  if(!sec) return;
+  const isHidden = (sec.style.display === 'none' || !sec.style.display);
+  sec.style.display = isHidden ? 'block' : 'none';
+  if(isHidden){
+    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function closeHumSection(){
+  if(_isHumRecording){
+    stopHumRecording();
+  }
+  const sec = document.getElementById('hum-section');
+  if(sec) sec.style.display = 'none';
+}
+
+function switchHumTab(mode){
+  _humTabMode = mode;
+  const tabMic = document.getElementById('hum-tab-mic');
+  const tabFile = document.getElementById('hum-tab-file');
+  const panelMic = document.getElementById('hum-mic-panel');
+  const panelFile = document.getElementById('hum-file-panel');
+  if(mode === 'mic'){
+    if(tabMic) tabMic.className = 'btn btn-sm btn-orange';
+    if(tabFile) tabFile.className = 'btn btn-sm btn-ghost';
+    if(panelMic) panelMic.style.display = 'block';
+    if(panelFile) panelFile.style.display = 'none';
+  } else {
+    if(tabMic) tabMic.className = 'btn btn-sm btn-ghost';
+    if(tabFile) tabFile.className = 'btn btn-sm btn-orange';
+    if(panelMic) panelMic.style.display = 'none';
+    if(panelFile) panelFile.style.display = 'block';
+  }
+}
+
+function onHumFileSelected(input){
+  const file = input.files[0];
+  if(file){
+    showStatus('hum-status', `✓ File selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'ok');
+  }
+}
+
+async function startHumRecording(){
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: true
+      }
+    });
+    _humMicStream = stream;
+    _humAudioSamples = [];
+    _humRecordedWavBlob = null;
+    _isHumRecording = true;
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    _humAudioContext = new AudioCtx();
+    if(_humAudioContext.state === 'suspended'){
+      await _humAudioContext.resume();
+    }
+    _humSampleRate = _humAudioContext.sampleRate || 44100;
+
+    const source = _humAudioContext.createMediaStreamSource(stream);
+    _humAnalyser = _humAudioContext.createAnalyser();
+    _humAnalyser.fftSize = 256;
+    source.connect(_humAnalyser);
+
+    // Live sample collector buffer
+    const bufferSize = 4096;
+    _humScriptProcessor = _humAudioContext.createScriptProcessor(bufferSize, 1, 1);
+    _humScriptProcessor.onaudioprocess = (e) => {
+      if(!_isHumRecording) return;
+      const inputData = e.inputBuffer.getChannelData(0);
+      for(let i = 0; i < inputData.length; i++){
+        _humAudioSamples.push(inputData[i]);
+      }
+    };
+
+    source.connect(_humScriptProcessor);
+    
+    // Connect to a muted gain node to ensure onaudioprocess continues without feedback
+    const muteGain = _humAudioContext.createGain();
+    muteGain.gain.value = 0.0;
+    _humScriptProcessor.connect(muteGain);
+    muteGain.connect(_humAudioContext.destination);
+
+    // UI Updates
+    document.getElementById('hum-start-rec-btn').style.display = 'none';
+    document.getElementById('hum-stop-rec-btn').style.display = 'inline-flex';
+    document.getElementById('hum-rerec-btn').style.display = 'none';
+    document.getElementById('hum-preview-wrap').style.display = 'none';
+    document.getElementById('hum-viz-placeholder').style.display = 'none';
+    document.getElementById('hum-rec-badge').style.display = 'inline-flex';
+    showStatus('hum-status', '🎙️ Recording live microphone… hum or sing your melody now!', 'info');
+
+    // Live Timer
+    _humSeconds = 0;
+    document.getElementById('hum-rec-time').textContent = '00:00';
+    clearInterval(_humTimer);
+    _humTimer = setInterval(() => {
+      _humSeconds++;
+      const mins = String(Math.floor(_humSeconds / 60)).padStart(2, '0');
+      const secs = String(_humSeconds % 60).padStart(2, '0');
+      document.getElementById('hum-rec-time').textContent = `${mins}:${secs}`;
+      if(_humSeconds >= 30){
+        stopHumRecording();
+      }
+    }, 1000);
+
+    drawHumVisualizer();
+  } catch(err) {
+    alert('Microphone Access Error: ' + err.message + '\nPlease check that microphone access is allowed in your browser settings.');
+    showStatus('hum-status', '✗ Microphone access denied: ' + err.message, 'err');
+  }
+}
+
+function stopHumRecording(){
+  if(!_isHumRecording) return;
+  _isHumRecording = false;
+  clearInterval(_humTimer);
+
+  if(_humScriptProcessor){
+    _humScriptProcessor.disconnect();
+    _humScriptProcessor = null;
+  }
+  if(_humMicStream){
+    _humMicStream.getTracks().forEach(t => t.stop());
+    _humMicStream = null;
+  }
+  cancelAnimationFrame(_humAnimFrame);
+
+  if(_humAudioSamples.length > 0){
+    // Encode to standard 16-bit PCM WAV
+    const flatSamples = new Float32Array(_humAudioSamples);
+    _humRecordedWavBlob = encodeWAV(flatSamples, _humSampleRate);
+
+    const audioUrl = URL.createObjectURL(_humRecordedWavBlob);
+    const player = document.getElementById('hum-audio-preview');
+    if(player){
+      player.src = audioUrl;
+      player.load();
+    }
+    const prevWrap = document.getElementById('hum-preview-wrap');
+    if(prevWrap) prevWrap.style.display = 'block';
+    const rerecBtn = document.getElementById('hum-rerec-btn');
+    if(rerecBtn) rerecBtn.style.display = 'inline-flex';
+    const placeHolder = document.getElementById('hum-viz-placeholder');
+    if(placeHolder){
+      placeHolder.style.display = 'flex';
+      const durSec = (_humAudioSamples.length / _humSampleRate).toFixed(1);
+      placeHolder.innerHTML = `<span>✓ Voice recorded (${durSec}s)! Listen above or click Convert to Beat.</span>`;
+    }
+    showStatus('hum-status', `✓ Recorded ${(_humAudioSamples.length / _humSampleRate).toFixed(1)}s WAV audio. Ready to convert!`, 'ok');
+  } else {
+    showStatus('hum-status', 'No audio samples detected. Please try recording again.', 'err');
+  }
+
+  if(_humAudioContext && _humAudioContext.state !== 'closed'){
+    _humAudioContext.close();
+    _humAudioContext = null;
+  }
+
+  const startBtn = document.getElementById('hum-start-rec-btn');
+  if(startBtn){
+    startBtn.style.display = 'inline-flex';
+    startBtn.innerHTML = '<span>🔴 Record Again</span>';
+  }
+  const stopBtn = document.getElementById('hum-stop-rec-btn');
+  if(stopBtn) stopBtn.style.display = 'none';
+  const recBadge = document.getElementById('hum-rec-badge');
+  if(recBadge) recBadge.style.display = 'none';
+}
+
+function resetHumRecording(){
+  _isHumRecording = false;
+  _humRecordedWavBlob = null;
+  _humAudioSamples = [];
+  const prevWrap = document.getElementById('hum-preview-wrap');
+  if(prevWrap) prevWrap.style.display = 'none';
+  const rerecBtn = document.getElementById('hum-rerec-btn');
+  if(rerecBtn) rerecBtn.style.display = 'none';
+  const startBtn = document.getElementById('hum-start-rec-btn');
+  if(startBtn) startBtn.innerHTML = '<span>🔴 Start Recording</span>';
+  const placeHolder = document.getElementById('hum-viz-placeholder');
+  if(placeHolder){
+    placeHolder.style.display = 'flex';
+    placeHolder.innerHTML = '<span>🎙️ Click "Start Recording" & begin humming your melody…</span>';
+  }
+  const canvas = document.getElementById('hum-viz-canvas');
+  if(canvas){
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  const statusEl = document.getElementById('hum-status');
+  if(statusEl) statusEl.style.display = 'none';
+}
+
+function drawHumVisualizer(){
+  const canvas = document.getElementById('hum-viz-canvas');
+  if(!canvas || !_humAnalyser) return;
+  const ctx = canvas.getContext('2d');
+  const bufferLength = _humAnalyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+
+  canvas.width = canvas.offsetWidth || 300;
+  canvas.height = canvas.offsetHeight || 80;
+
+  function render(){
+    if(!_isHumRecording) return;
+    _humAnimFrame = requestAnimationFrame(render);
+    _humAnalyser.getByteFrequencyData(dataArray);
+
+    ctx.fillStyle = '#050508';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const barWidth = (canvas.width / bufferLength) * 2.2;
+    let x = 0;
+
+    for(let i = 0; i < bufferLength; i++){
+      const barHeight = (dataArray[i] / 255) * canvas.height * 0.9;
+      const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+      gradient.addColorStop(0, '#f0883e');
+      gradient.addColorStop(0.6, '#ffd666');
+      gradient.addColorStop(1, '#ffffff');
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, canvas.height - barHeight, Math.max(1, barWidth - 2), barHeight);
+      x += barWidth;
+    }
+  }
+  render();
+}
+
 async function submitHum(){
-  const file=document.getElementById('hum-file').files[0];
-  if(!file){ alert('Please select an audio file first.'); return; }
-  const fd=new FormData(); fd.append('audio',file);
-  showStatus('gen-status','Converting hum to beat…','info');
-  try{
-  const r=await fetch(`${API}/hum`,{method:'POST',headers,body:fd});
-  if(!r.ok){ const e=await r.json(); throw new Error(e.detail||'Hum failed'); }
-  const d=await r.json();
-  const audioUrl=`${API}${d.audio_url}`;
-  addBeatCard(d.filename||'hum_beat.wav','Hum Beat',audioUrl);
-  showStatus('gen-status','✓ Hum converted!','ok');
-  }catch(e){ showStatus('gen-status','✗ '+e.message,'err'); }
+  let audioFile = null;
+  if(_humTabMode === 'mic'){
+    if(!_humRecordedWavBlob){
+      showStatus('hum-status', 'Please record your voice humming first (click "Start Recording").', 'err');
+      return;
+    }
+    audioFile = new File([_humRecordedWavBlob], `hum_recording_${Date.now()}.wav`, { type: 'audio/wav' });
+  } else {
+    const fileInput = document.getElementById('hum-file');
+    if(!fileInput || !fileInput.files[0]){
+      showStatus('hum-status', 'Please select an audio file first.', 'err');
+      return;
+    }
+    audioFile = fileInput.files[0];
+  }
+
+  const styleVal = document.getElementById('hum-style-select')?.value || 'Trap / Hip-Hop';
+  const customPrompt = document.getElementById('hum-prompt-input')?.value.trim() || '';
+  const fullPrompt = customPrompt ? `${customPrompt} ${styleVal}` : `melodic hum beat with ${styleVal}`;
+
+  const convertBtn = document.getElementById('hum-convert-btn');
+  if(convertBtn){
+    convertBtn.disabled = true;
+    convertBtn.innerHTML = '<span>⏳ Synthesizing Beat from Humming…</span>';
+  }
+  showStatus('hum-status', 'Analyzing voice pitch, scale & synthesizing matching beat…', 'info');
+
+  const fd = new FormData();
+  fd.append('file', audioFile);
+  fd.append('audio', audioFile);
+  fd.append('prompt', fullPrompt);
+
+  try {
+    const r = await fetch(`${API}/hum`, {
+      method: 'POST',
+      headers: headers,
+      body: fd
+    });
+
+    if(!r.ok){
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || 'Hum conversion failed');
+    }
+
+    const d = await r.json();
+    const audioUrl = `${API}${d.audio_url || d.url}`;
+    const beatName = `Hum Beat: ${styleVal} (${d.filename || 'hum_beat.wav'})`;
+    addBeatCard(d.filename || 'hum_beat.wav', beatName, audioUrl);
+
+    // Update current active file for Audio Tools, DAW & FCA Optimizer
+    _currentFilename = d.filename;
+    _currentFile = audioUrl;
+    const currentLbl = document.getElementById('current-audio-label');
+    if(currentLbl){
+      currentLbl.textContent = '✓ ' + d.filename;
+      currentLbl.style.display = 'block';
+    }
+    const sessionSel = document.getElementById('session-beat-select');
+    if(sessionSel){
+      const opt = document.createElement('option');
+      opt.value = d.filename;
+      opt.textContent = beatName;
+      sessionSel.appendChild(opt);
+      sessionSel.value = d.filename;
+    }
+
+    showStatus('hum-status', `✓ Beat successfully synthesized from your voice humming! (${d.duration ? d.duration + 's' : '10s'})`, 'ok');
+  } catch(err) {
+    showStatus('hum-status', `✗ ${err.message}`, 'err');
+  } finally {
+    if(convertBtn){
+      convertBtn.disabled = false;
+      convertBtn.innerHTML = '<span>⚡ Convert Hum to Beat</span>';
+    }
+  }
 }
 
 /* ── Continue Beat ────────────────────────────────────────────── */
@@ -2537,6 +3041,134 @@ async function saveToLibrary(){
   if(!r.ok){ const e=await r.json(); throw new Error(e.detail||'Save failed'); }
   showStatus('save-status','✓ Saved to My Library!','ok');
   }catch(e){ showStatus('save-status','✗ '+e.message,'err'); }
+}
+
+/* ── FCA Audio Optimizer ────────────────────────────────────────── */
+function onFcaModeChange(mode){
+  const qWrap = document.getElementById('fca-quality-wrap');
+  if(qWrap) qWrap.style.display = (mode === 'perceptual') ? 'block' : 'none';
+}
+
+function updateFcaQuality(val){
+  const label = document.getElementById('fca-quality-val');
+  const v = parseInt(val, 10);
+  let desc = 'Balanced';
+  if(v <= 3) desc = 'High Compression';
+  else if(v <= 7) desc = 'Balanced';
+  else desc = 'High Fidelity';
+  if(label) label.textContent = `Q${v} (${desc})`;
+}
+
+function resetFcaOptimizer(){
+  const status = document.getElementById('fca-status');
+  if(status) status.style.display = 'none';
+  const panel = document.getElementById('fca-results-panel');
+  if(panel) panel.style.display = 'none';
+}
+
+function _formatBytes(bytes){
+  if(!bytes || bytes <= 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function optimizeFCA(){
+  let fileToOptimize = _currentFilename;
+  if(!fileToOptimize){
+    const sel = document.getElementById('session-beat-select');
+    if(sel && sel.value) fileToOptimize = sel.value;
+  }
+  if(!fileToOptimize){
+    showStatus('fca-status', 'Please generate or upload an audio file first.', 'err');
+    return;
+  }
+
+  const mode = document.querySelector('input[name="fca-mode"]:checked')?.value || 'lossless';
+  const quality = parseInt(document.getElementById('fca-quality-slider')?.value || '5', 10);
+  const btn = document.getElementById('fca-opt-btn');
+  const panel = document.getElementById('fca-results-panel');
+
+  showStatus('fca-status', `Encoding audio with ${mode === 'lossless' ? 'FCA-L (Lossless Reversible Transform)' : `FCA-P (Perceptual Q${quality})`}…`, 'info');
+  if(btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  if(panel) panel.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/tools/fca-optimize`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: fileToOptimize,
+        mode: mode,
+        quality: quality
+      })
+    });
+
+    if(!res.ok){
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'FCA optimization failed');
+    }
+
+    const data = await res.json();
+    
+    // Display results
+    if(panel) panel.style.display = 'block';
+
+    const origSizeEl = document.getElementById('fca-res-orig-size');
+    const compSizeEl = document.getElementById('fca-res-comp-size');
+    const savedEl = document.getElementById('fca-res-saved');
+    const ratioEl = document.getElementById('fca-res-ratio');
+    const hashEl = document.getElementById('fca-res-hash');
+    const modeBadge = document.getElementById('fca-badge-mode');
+    const verifiedBadge = document.getElementById('fca-verified-badge');
+    const downloadBtn = document.getElementById('fca-download-btn');
+
+    if(origSizeEl) origSizeEl.textContent = _formatBytes(data.original_size_bytes);
+    if(compSizeEl) compSizeEl.textContent = _formatBytes(data.compressed_size_bytes);
+    
+    const savedPct = (data.space_saved_percent != null) ? data.space_saved_percent.toFixed(1) : '0';
+    if(savedEl) {
+      if(data.space_saved_percent > 0){
+        savedEl.textContent = `${savedPct}% (${_formatBytes(data.space_saved_bytes)})`;
+        savedEl.style.color = 'var(--green-accent)';
+      } else {
+        savedEl.textContent = `${_formatBytes(data.space_saved_bytes)} (0%)`;
+        savedEl.style.color = 'var(--text-muted)';
+      }
+    }
+
+    if(ratioEl) ratioEl.textContent = `${(data.compression_ratio || 1).toFixed(2)}x`;
+    if(hashEl) {
+      hashEl.textContent = data.checksum_sha256 ? data.checksum_sha256.slice(0, 16) + '…' : '—';
+      hashEl.title = data.checksum_sha256 || '';
+    }
+
+    if(modeBadge) {
+      modeBadge.textContent = data.mode === 'lossless' ? 'FCA-L Lossless' : `FCA-P Perceptual (Q${data.quality})`;
+    }
+
+    if(verifiedBadge) {
+      if(data.is_lossless_verified){
+        verifiedBadge.innerHTML = '✓ LOSSLESS VERIFIED';
+        verifiedBadge.style.color = '#50c878';
+      } else {
+        verifiedBadge.innerHTML = '⚡ PERCEPTUAL ENCODED';
+        verifiedBadge.style.color = 'var(--orange)';
+      }
+    }
+
+    if(downloadBtn) {
+      downloadBtn.href = `${API}${data.fca_url}`;
+      downloadBtn.download = data.fca_filename;
+    }
+
+    showStatus('fca-status', `✓ Encoded ${data.fca_filename} (${data.compression_ratio.toFixed(2)}x compression ratio)`, 'ok');
+  } catch(err) {
+    showStatus('fca-status', `✗ ${err.message}`, 'err');
+  } finally {
+    if(btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  }
 }
 
 // Scroll animations

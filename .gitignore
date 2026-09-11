@@ -46,11 +46,18 @@ sounds/
 # Runtime audio output (generated files — not source code)
 stems_outputs/
 beat_outputs/
+mastered_outputs/
+fca_outputs/
 uploads/
+upload_tmp/
+scratch/
 *.wav
 *.mp3
 *.flac
 *.ogg
+*.fca
+*.mid
 
 # Server output log
 server_out.txt
+
