@@ -44,6 +44,9 @@ class User(Base):
     starred_repos = relationship("Star", back_populates="user", cascade="all, delete-orphan")
     following = relationship("Follow", back_populates="follower", foreign_keys="[Follow.follower_id]", cascade="all, delete-orphan")
     followers = relationship("Follow", back_populates="followee", foreign_keys="[Follow.followee_id]", cascade="all, delete-orphan")
+    clone_licenses = relationship("CloneLicense", back_populates="creator", cascade="all, delete-orphan")
+    clone_purchases = relationship("CloneTransaction", back_populates="cloning_user", foreign_keys="[CloneTransaction.cloning_user_id]", cascade="all, delete-orphan")
+    clone_sales = relationship("CloneTransaction", back_populates="original_creator", foreign_keys="[CloneTransaction.original_creator_id]", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User username='{self.username}'>"
@@ -70,6 +73,8 @@ class Repository(Base):
                            cascade="all, delete-orphan",
                            order_by="Commit.created_at")
     fork_parent = relationship("Repository", remote_side="Repository.id", foreign_keys=[forked_from])
+    clone_license = relationship("CloneLicense", back_populates="repository", uselist=False, cascade="all, delete-orphan")
+    clone_transactions = relationship("CloneTransaction", back_populates="original_repository", foreign_keys="[CloneTransaction.original_repository_id]", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Repository name='{self.name}' id='{self.id[:8]}'>"
@@ -183,3 +188,67 @@ class Comment(Base):
 
     commit = relationship("Commit", back_populates="comments")
     author = relationship("User")
+
+
+# ── Clone Licensing & Monetization Entities ───────────────────────
+class CloneLicense(Base):
+    """
+    Defines how other creators can clone/fork a repository or track:
+    - mode="free_support": Free clone after completing creator support (Star + Fork)
+    - mode="paid": Paid clone with a specified fee in INR (₹)
+    """
+    __tablename__ = "clone_licenses"
+
+    id: str = Column(String(36), primary_key=True, default=_uuid)
+    repository_id: str = Column(String(36), ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False, unique=True)
+    commit_id: Optional[str] = Column(String(36), ForeignKey("commits.id", ondelete="SET NULL"), nullable=True)
+    creator_id: str = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    mode: str = Column(String(30), default="free_support")  # "free_support" | "paid"
+    price: float = Column(Float, default=0.0)
+    currency: str = Column(String(10), default="INR")
+    is_active: bool = Column(Boolean, default=True)
+    created_at: datetime = Column(DateTime, default=_now)
+    updated_at: datetime = Column(DateTime, default=_now, onupdate=_now)
+
+    repository = relationship("Repository", back_populates="clone_license")
+    creator = relationship("User", back_populates="clone_licenses")
+    commit = relationship("Commit")
+    transactions = relationship("CloneTransaction", back_populates="license", cascade="all, delete-orphan")
+
+    def __repr__(self) -> str:
+        return f"<CloneLicense mode='{self.mode}' price={self.price} repo='{self.repository_id[:8]}'>"
+
+
+class CloneTransaction(Base):
+    """
+    Audit log of all clone events (both Paid and Free Support unlocks).
+    Tracks creative lineage, revenue splits, and attribution.
+    """
+    __tablename__ = "clone_transactions"
+
+    id: str = Column(String(36), primary_key=True, default=_uuid)
+    license_id: Optional[str] = Column(String(36), ForeignKey("clone_licenses.id", ondelete="SET NULL"), nullable=True)
+    original_repository_id: str = Column(String(36), ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False)
+    original_commit_id: Optional[str] = Column(String(36), ForeignKey("commits.id", ondelete="SET NULL"), nullable=True)
+    original_creator_id: str = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    cloning_user_id: str = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    clone_repository_id: Optional[str] = Column(String(36), ForeignKey("repositories.id", ondelete="SET NULL"), nullable=True)
+    clone_commit_id: Optional[str] = Column(String(36), ForeignKey("commits.id", ondelete="SET NULL"), nullable=True)
+
+    license_mode: str = Column(String(30), default="free_support")  # "paid" | "free_support"
+    total_amount: float = Column(Float, default=0.0)
+    creator_amount: float = Column(Float, default=0.0)
+    platform_fee: float = Column(Float, default=0.0)
+    currency: str = Column(String(10), default="INR")
+    status: str = Column(String(30), default="completed")  # "completed" | "demo_completed" | "pending"
+    created_at: datetime = Column(DateTime, default=_now)
+
+    license = relationship("CloneLicense", back_populates="transactions")
+    original_repository = relationship("Repository", back_populates="clone_transactions", foreign_keys=[original_repository_id])
+    clone_repository = relationship("Repository", foreign_keys=[clone_repository_id])
+    original_creator = relationship("User", back_populates="clone_sales", foreign_keys=[original_creator_id])
+    cloning_user = relationship("User", back_populates="clone_purchases", foreign_keys=[cloning_user_id])
+    original_commit = relationship("Commit", foreign_keys=[original_commit_id])
+
+    def __repr__(self) -> str:
+        return f"<CloneTransaction mode='{self.license_mode}' amt={self.total_amount} cloner='{self.cloning_user_id[:8]}'>"

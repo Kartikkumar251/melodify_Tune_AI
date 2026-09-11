@@ -6,10 +6,14 @@ Usage: python run_demucs.py <input_file> <out_dir>
 import sys, os
 
 # ── Patch torchaudio.load BEFORE demucs loads it ────────────────────────────
-import soundfile as sf
-import numpy as np
-import torch
-import torchaudio as _ta
+try:
+    import soundfile as sf
+    import numpy as np
+    import torch
+    import torchaudio as _ta
+except ImportError:
+    print("torchaudio or soundfile not installed, skipping neural Demucs wrapper", file=sys.stderr)
+    sys.exit(1)
 
 def _sf_load(uri, frame_offset=0, num_frames=-1, normalize=True,
              channels_first=True, format=None, buffer_size=4096, backend=None):
@@ -48,8 +52,10 @@ if len(sys.argv) < 3:
 input_file = sys.argv[1]
 out_dir    = sys.argv[2]
 
-# Build demucs argv and call main
-sys.argv = ["demucs", "--out", out_dir, "-n", "htdemucs", input_file]
-
-from demucs.separate import main
-main()
+try:
+    from demucs.separate import main
+    sys.argv = ["demucs", "--out", out_dir, "-n", "htdemucs", input_file]
+    main()
+except ImportError:
+    print("demucs module not installed", file=sys.stderr)
+    sys.exit(1)

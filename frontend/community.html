@@ -123,12 +123,15 @@ function buildCard(u){
 <div class="user-bio">${u.bio||'No bio yet.'}</div>
 </div>
 </div>
-<div class="user-meta">
+<div class="user-meta" style="flex-wrap:wrap;gap:8px 14px;">
 <span class="user-stat"><strong>${u.followers_count||0}</strong> followers</span>
 <span class="user-stat"><strong>${u.following_count||0}</strong> following</span>
+<span class="user-stat"><strong>⭐ ${u.total_stars||0}</strong> stars</span>
+<span class="user-stat"><strong>⚡ ${u.total_clones_received||0}</strong> clones</span>
   ${u.projects_count!=null?`<span class="user-stat"><strong>${u.projects_count}</strong> projects</span>`:''}
+  ${u.total_clone_revenue?`<span class="user-stat" style="color:var(--orange);"><strong>₹${u.total_clone_revenue}</strong> earned</span>`:''}
 </div>
-  ${isMe?`<button class="follow-btn following" disabled style="opacity:.5;cursor:default;">You</button>`:`<button class="follow-btn ${isFollowing?'following':'not-following'}" id="btn-${u.username}" onclick="toggleFollow('${u.username}',this)">${isFollowing?'':`Follow`}</button>`}
+  ${isMe?`<button class="follow-btn following" disabled style="opacity:.5;cursor:default;">You</button>`:`<button class="follow-btn ${isFollowing?'following':'not-following'}" id="btn-${u.username}" onclick="toggleFollow('${u.username}',this)">${isFollowing?'Following ✓':'Follow'}</button>`}
 </div>`;
 }
 

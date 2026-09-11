@@ -22,4 +22,4 @@ if __name__ == "__main__":
     print("  Server URL   :  http://localhost:8000")
     print("  Studio DAW   :  http://localhost:8000/ui/studio.html")
     print("=" * 65)
-    uvicorn.run("backend.api_server:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

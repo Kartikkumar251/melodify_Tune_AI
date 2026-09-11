@@ -175,27 +175,39 @@ function renderRepos(repos){
   el.innerHTML='<div style="padding:48px;text-align:center;color:var(--text-muted);"><div style="font-size:2rem;margin-bottom:12px;"></div><div style="font-size:16px;font-weight:600;margin-bottom:8px;">No repositories yet</div><div style="margin-bottom:20px;">Create your first repository to start versioning your beats.</div><button class="btn btn-green" onclick="openModal(\'new-proj-modal\')">+ New Repository</button></div>';
   return;
   }
-  el.innerHTML=repos.map(r=>`
+  el.innerHTML=repos.map(r=>{
+    const lic = r.clone_license || {mode:'free_support', price:0.0};
+    const isPaid = lic.mode === 'paid' && lic.price > 0;
+    const licenseBadge = isPaid
+      ? `<span class="tag" style="background:rgba(240,136,62,.15);border-color:rgba(240,136,62,.35);color:var(--orange);font-weight:600;">💎 ₹${lic.price}</span>`
+      : `<span class="tag" style="background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.3);color:var(--green-accent);">Free Clone</span>`;
+
+    return `
 <div class="repo-row fade-in">
-<div class="repo-row-icon">${r.forked_from?'':''}</div>
+<div class="repo-row-icon">${r.forked_from?'🌿':'🎵'}</div>
 <div class="repo-row-body">
 <a class="repo-row-name" href="repo.html?id=${r.id}">${r.name}</a>
+${r.cloned_from_user?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">🌿 Cloned from @${r.cloned_from_user}</div>`:''}
 <div class="repo-row-desc">${r.description||'<em style="color:var(--text-muted)">No description</em>'}</div>
 <div class="repo-row-meta">
   ${r.is_public?'<span class="tag tag-blue">public</span>':'<span class="tag tag-orange">private</span>'}
+  ${licenseBadge}
   ${r.mood?`<span class="tag">${r.mood}</span>`:''}
 <span>⭐ ${r.star_count||0}</span>
+<span>⚡ ${r.clones_count||0} clones</span>
 <span>▶ ${r.play_count||0}</span>
-<span> ${r.commit_count||0} commits</span>
+<span>🎼 ${r.commit_count||0} commits</span>
   ${r.updated_at?`<span>Updated ${timeAgo(r.updated_at)}</span>`:''}
 </div>
 </div>
 <div class="repo-row-actions">
 <a href="repo.html?id=${r.id}" class="btn btn-ghost" style="font-size:12px;padding:3px 10px;">View</a>
+<a href="repo.html?id=${r.id}&action=clone" class="btn btn-ghost" style="font-size:12px;padding:3px 10px;color:var(--orange);border-color:rgba(240,136,62,.3);">⚡ Clone</a>
 <a href="project_tree.html?project=${r.id}" class="btn btn-ghost" style="font-size:12px;padding:3px 10px;">Tree</a>
 <button class="btn btn-ghost" style="font-size:12px;padding:3px 10px;" onclick="openEdit('${r.id}','${r.name.replace(/'/g,'&#39;')}','${(r.description||'').replace(/'/g,'&#39;')}',${r.is_public})">Edit</button>
 </div>
-</div>`).join('');
+</div>`;
+  }).join('');
   document.querySelectorAll('.repo-row.fade-in').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*40));
 }
 

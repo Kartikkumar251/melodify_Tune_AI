@@ -58,6 +58,11 @@ select option{background:var(--bg-overlay);}
 <!-- Filters -->
 <div class="filter-bar">
 <input type="search" id="search-q" placeholder="Search repositories, beats, producers…" oninput="debouncedSearch(this.value)"/>
+<select id="filter-clone" onchange="loadExplore()">
+<option value="">All Licenses</option>
+<option value="free_support">Free + Support</option>
+<option value="paid">Paid Clone (💎)</option>
+</select>
 <select id="filter-mood" onchange="loadExplore()">
 <option value="">All moods</option>
 <option value="EDM / Club Banger">EDM / Club Banger</option>
@@ -110,7 +115,7 @@ select option{background:var(--bg-overlay);}
 <div id="empty-state" class="empty-state" style="display:none;">
 <div class="icon"></div>
 <div style="font-size:18px;font-weight:600;margin-bottom:8px;">No beats found</div>
-<div style="margin-bottom:24px;">Try a different search or mood filter.</div>
+<div style="margin-bottom:24px;">Try a different search or license/mood filter.</div>
 <a href="studio.html" class="btn btn-green">Create a Beat</a>
 </div>
 </main>
@@ -130,6 +135,7 @@ function debouncedSearch(q){ clearTimeout(_debounceTimer); _debounceTimer=setTim
 async function loadExplore(append=false){
   if(!append){ _offset=0; }
   const q=document.getElementById('search-q').value.trim();
+  const cloneMode=document.getElementById('filter-clone').value;
   const mood=document.getElementById('filter-mood').value;
   const sort=document.getElementById('filter-sort').value;
   const bpmFilter=document.getElementById('filter-bpm').value;
@@ -141,6 +147,7 @@ async function loadExplore(append=false){
 
   const params=new URLSearchParams({sort,limit:LIMIT,offset:_offset});
   if(q) params.set('q',q);
+  if(cloneMode) params.set('clone_mode',cloneMode);
   if(mood) params.set('mood',mood);
   if(bpmMin) params.set('bpm_min',bpmMin);
   if(bpmMax) params.set('bpm_max',bpmMax);
@@ -167,25 +174,34 @@ async function loadExplore(append=false){
   // owner may be a plain string (API) or an object {username:...}
   const ownerName = typeof repo.owner==='string' ? repo.owner : (repo.owner?.username||'unknown');
   const starClass=_starState[repo.id]?'star-btn starred':'star-btn';
+  const lic = repo.clone_license || {mode:'free_support', price:0.0};
+  const isPaid = lic.mode === 'paid' && lic.price > 0;
+  const licenseBadge = isPaid
+    ? `<span class="tag" style="background:rgba(240,136,62,.15);border-color:rgba(240,136,62,.35);color:var(--orange);font-weight:600;">💎 ₹${lic.price}</span>`
+    : `<span class="tag" style="background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.3);color:var(--green-accent);">Free Clone</span>`;
+
   card.innerHTML=`
 <div class="repo-card-top">
 <div style="display:flex;align-items:center;gap:8px;">
 <div class="repo-avatar">${ownerName[0].toUpperCase()}</div>
 <span class="repo-owner">${ownerName}</span>
 </div>
-<div style="display:flex;gap:6px;">
+<div style="display:flex;gap:6px;align-items:center;">
+  ${licenseBadge}
   ${repo.mood?`<span class="tag">${repo.mood}</span>`:''}
 </div>
 </div>
-<a class="repo-name" href="project_tree.html?project=${repo.id}" onclick="event.stopPropagation()">${repo.name}</a>
+<a class="repo-name" href="repo.html?id=${repo.id}" onclick="event.stopPropagation()">${repo.name}</a>
+${repo.cloned_from_user?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">🌿 Cloned from @${repo.cloned_from_user}</div>`:''}
 <div class="repo-desc">${repo.description||'No description provided.'}</div>
 <div class="repo-meta">
   ${repo.bpm_hint?`<span>♩ ${repo.bpm_hint} BPM</span>`:''}
 <button class="${starClass}" id="star-${repo.id}" onclick="event.stopPropagation();toggleStar('${repo.id}')">⭐ ${repo.star_count||0}</button>
+<button class="fork-btn" style="background:rgba(240,136,62,.12);border-color:rgba(240,136,62,.3);color:var(--orange);" onclick="event.stopPropagation();location.href='repo.html?id=${repo.id}&action=clone'">⚡ Clone (${repo.clones_count||0})</button>
 <button class="fork-btn" onclick="event.stopPropagation();forkRepo('${repo.id}')">Fork</button>
 <span>▶ ${repo.play_count||0}</span>
 </div>`;
-  card.onclick=()=>location.href=`project_tree.html?project=${repo.id}`;
+  card.onclick=()=>location.href=`repo.html?id=${repo.id}`;
   grid.appendChild(card);
   setTimeout(()=>card.classList.add('visible'),50);
   });

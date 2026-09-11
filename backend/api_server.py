@@ -72,7 +72,7 @@ from transformers import AutoProcessor, MusicgenForConditionalGeneration
 
 # ── Database ──────────────────────────────────────────────────────
 from database import init_db, get_db
-from models import User, Repository, Commit, Stem, Star, Follow, Comment
+from models import User, Repository, Commit, Stem, Star, Follow, Comment, CloneLicense, CloneTransaction
 from auth import (
     hash_password, verify_password,
     create_access_token, get_current_user, get_current_user_optional
@@ -83,6 +83,7 @@ from sqlalchemy.orm import Session
 import audio_processing as _ap
 
 # ── Config ───────────────────────────────────────────────────────
+PLATFORM_FEE_PERCENT = 0.10   # 10% platform fee, 90% goes to creator on Paid Clones
 MODEL_NAME      = "facebook/musicgen-small"
 DURATION_TOKENS = 320          # ~10 seconds
 OUTPUT_DIR      = _ROOT_DIR / "beat_outputs"
@@ -1086,21 +1087,23 @@ def my_projects(
 
 @app.get("/projects/search")
 def search_projects(
-    q:       Optional[str]   = Query(None, description="Text search in name/description"),
-    mood:    Optional[str]   = Query(None, description="Filter by mood (exact match)"),
-    bpm_min: Optional[float] = Query(None, description="Minimum BPM (across commits)"),
-    bpm_max: Optional[float] = Query(None, description="Maximum BPM (across commits)"),
-    sort:    Optional[str]   = Query("newest", description="newest | popular | most_played"),
-    limit:   int             = Query(30, le=100),
-    offset:  int             = Query(0, ge=0),
+    q:          Optional[str]   = Query(None, description="Text search in name/description"),
+    mood:       Optional[str]   = Query(None, description="Filter by mood (exact match)"),
+    bpm_min:    Optional[float] = Query(None, description="Minimum BPM (across commits)"),
+    bpm_max:    Optional[float] = Query(None, description="Maximum BPM (across commits)"),
+    clone_mode: Optional[str]   = Query(None, description="free_support | paid | all"),
+    sort:       Optional[str]   = Query("newest", description="newest | popular | most_played"),
+    limit:      int             = Query(30, le=100),
+    offset:     int             = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
     """
     Search public repositories.
-    - q       : full-text search in name + description
-    - mood    : filter commits by mood tag
+    - q          : full-text search in name + description
+    - mood       : filter commits by mood tag
     - bpm_min/max: filter by BPM range of the latest commit
-    - sort    : newest (default) | popular (stars) | most_played
+    - clone_mode : filter by clone license mode (paid | free_support)
+    - sort       : newest (default) | popular (stars) | most_played
     """
     from sqlalchemy import or_
     query = db.query(Repository).filter(Repository.is_public == True)
@@ -1111,6 +1114,15 @@ def search_projects(
             or_(Repository.name.ilike(like),
                 Repository.description.ilike(like))
         )
+
+    if clone_mode in ("free_support", "paid"):
+        query = query.outerjoin(CloneLicense, CloneLicense.repository_id == Repository.id)
+        if clone_mode == "paid":
+            query = query.filter(CloneLicense.mode == "paid", CloneLicense.price > 0)
+        elif clone_mode == "free_support":
+            query = query.filter(
+                or_(CloneLicense.mode == "free_support", CloneLicense.mode.is_(None), CloneLicense.price == 0)
+            )
 
     if mood or bpm_min is not None or bpm_max is not None:
         query = query.join(Commit, Commit.repository_id == Repository.id)
@@ -1186,11 +1198,13 @@ def fork_project(
 # ─────────────────────────────────────────────────────────────────
 
 class CommitRequest(BaseModel):
-    filename:   str
-    message:    Optional[str] = "New beat"
-    prompt:     Optional[str] = ""
-    mood:       Optional[str] = ""
-    parent_hash: Optional[str] = None   # hash of parent commit (branching)
+    filename:           str
+    message:            Optional[str] = "New beat"
+    prompt:             Optional[str] = ""
+    mood:               Optional[str] = ""
+    parent_hash:        Optional[str] = None   # hash of parent commit (branching)
+    clone_license_mode: Optional[str] = None   # "free_support" | "paid"
+    clone_price:        Optional[float] = None # Price in INR (e.g. 49.0)
 
 
 @app.post("/projects/{repo_id}/commit", status_code=201)
@@ -1251,6 +1265,27 @@ def create_commit(
     db.add(commit)
     repo.updated_at = datetime.utcnow()
     db.commit(); db.refresh(commit)
+
+    # If creator configured a Clone License during commit, apply it to this repository
+    if req.clone_license_mode in ("free_support", "paid"):
+        lic = db.query(CloneLicense).filter(CloneLicense.repository_id == repo_id).first()
+        price = max(0.0, float(req.clone_price or 0.0)) if req.clone_license_mode == "paid" else 0.0
+        if not lic:
+            lic = CloneLicense(
+                repository_id=repo_id,
+                commit_id=commit.id,
+                creator_id=current_user.id,
+                mode=req.clone_license_mode,
+                price=price,
+                currency="INR"
+            )
+            db.add(lic)
+        else:
+            lic.mode = req.clone_license_mode
+            lic.price = price
+            lic.commit_id = commit.id
+        db.commit()
+
     return _commit_summary(commit)
 
 
@@ -1269,22 +1304,379 @@ def commit_tree(repo_id: str, db: Session = Depends(get_db)):
 
 
 # ─────────────────────────────────────────────────────────────────
+# CLONE LICENSING & CREATIVE LINEAGE ENDPOINTS
+# ─────────────────────────────────────────────────────────────────
+
+class CloneLicenseRequest(BaseModel):
+    mode: str = "free_support"  # "free_support" | "paid"
+    price: Optional[float] = 0.0
+    currency: Optional[str] = "INR"
+
+
+class CloneExecuteRequest(BaseModel):
+    demo_payment: Optional[bool] = False
+    payment_reference: Optional[str] = None
+    custom_name: Optional[str] = None
+
+
+@app.get("/projects/{repo_id}/clone-license")
+def get_clone_license(
+    repo_id: str,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    """
+    Get the active Clone License and user unlock status for a repository.
+    """
+    repo = db.query(Repository).filter(Repository.id == repo_id).first()
+    if not repo:
+        raise HTTPException(404, "Repository not found")
+
+    lic = repo.clone_license
+    mode = lic.mode if lic else "free_support"
+    price = lic.price if lic else 0.0
+    currency = lic.currency if lic else "INR"
+
+    has_starred = False
+    has_forked = False
+    has_cloned = False
+
+    if current_user:
+        has_starred = db.query(Star).filter(Star.user_id == current_user.id, Star.repo_id == repo_id).first() is not None
+        has_forked = db.query(Repository).filter(Repository.owner_id == current_user.id, Repository.forked_from == repo_id).first() is not None
+        has_cloned = db.query(CloneTransaction).filter(CloneTransaction.cloning_user_id == current_user.id, CloneTransaction.original_repository_id == repo_id).first() is not None
+
+    return {
+        "repository_id": repo.id,
+        "repository_name": repo.name,
+        "creator_username": repo.owner.username if repo.owner else "creator",
+        "creator_id": repo.owner_id,
+        "mode": mode,
+        "price": price,
+        "currency": currency,
+        "has_starred": has_starred,
+        "has_forked": has_forked,
+        "has_cloned": has_cloned,
+        "eligible_free": has_starred and has_forked,
+        "is_owner": (current_user.id == repo.owner_id) if current_user else False,
+    }
+
+
+@app.post("/projects/{repo_id}/clone-license")
+@app.patch("/projects/{repo_id}/clone-license")
+def update_clone_license(
+    repo_id: str,
+    req: CloneLicenseRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Update the Clone License for a repository (owner only).
+    """
+    repo = db.query(Repository).filter(Repository.id == repo_id).first()
+    if not repo:
+        raise HTTPException(404, "Repository not found")
+    if repo.owner_id != current_user.id:
+        raise HTTPException(403, "Only the repository owner can update the clone license")
+
+    if req.mode not in ("free_support", "paid"):
+        raise HTTPException(400, "License mode must be 'free_support' or 'paid'")
+
+    price = max(0.0, float(req.price or 0.0)) if req.mode == "paid" else 0.0
+    lic = repo.clone_license
+    if not lic:
+        lic = CloneLicense(
+            repository_id=repo.id,
+            creator_id=current_user.id,
+            mode=req.mode,
+            price=price,
+            currency=req.currency or "INR",
+        )
+        db.add(lic)
+    else:
+        lic.mode = req.mode
+        lic.price = price
+        lic.currency = req.currency or lic.currency
+    db.commit(); db.refresh(lic)
+    return {
+        "repository_id": repo.id,
+        "mode": lic.mode,
+        "price": lic.price,
+        "currency": lic.currency,
+        "updated_at": lic.updated_at.isoformat() if lic.updated_at else None,
+    }
+
+
+@app.post("/projects/{repo_id}/clone")
+def clone_project(
+    repo_id: str,
+    req: CloneExecuteRequest = CloneExecuteRequest(),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Execute a project clone (Paid or Free + Support).
+    Clones the repository & commits, creates transaction record, and links creative lineage.
+    """
+    source = db.query(Repository).filter(Repository.id == repo_id).first()
+    if not source:
+        raise HTTPException(404, "Source repository not found")
+    if not source.is_public and source.owner_id != current_user.id:
+        raise HTTPException(403, "Cannot clone private repository")
+
+    lic = source.clone_license
+    mode = lic.mode if lic else "free_support"
+    price = lic.price if lic else 0.0
+    currency = lic.currency if lic else "INR"
+
+    total_amt = 0.0
+    creator_amt = 0.0
+    platform_amt = 0.0
+    tx_status = "completed"
+
+    if mode == "paid" and price > 0:
+        # Paid clone: user must provide payment confirmation (demo payment accepted for MVP)
+        if not req.demo_payment and not req.payment_reference:
+            raise HTTPException(402, f"Payment required: ₹{price} clone license fee")
+        total_amt = price
+        platform_amt = round(total_amt * PLATFORM_FEE_PERCENT, 2)
+        creator_amt = round(total_amt - platform_amt, 2)
+        tx_status = "demo_completed"
+    else:
+        # Free + Creator Support: ensure user has starred the source repo
+        existing_star = db.query(Star).filter(Star.user_id == current_user.id, Star.repo_id == source.id).first()
+        if not existing_star:
+            new_star = Star(user_id=current_user.id, repo_id=source.id)
+            db.add(new_star)
+            source.star_count = (source.star_count or 0) + 1
+        tx_status = "completed"
+
+    # Create the new cloned Repository
+    clone_name = req.custom_name or f"{source.name}-clone"
+    clone_repo = Repository(
+        owner_id=current_user.id,
+        name=clone_name,
+        description=f"Cloned from @{source.owner.username}/{source.name}" if source.owner else f"Cloned from {source.name}",
+        is_public=True,
+        forked_from=source.id,
+    )
+    db.add(clone_repo)
+    db.commit(); db.refresh(clone_repo)
+
+    # Inherit default license for the new repository
+    new_lic = CloneLicense(
+        repository_id=clone_repo.id,
+        creator_id=current_user.id,
+        mode="free_support",
+        price=0.0,
+        currency="INR"
+    )
+    db.add(new_lic)
+
+    # Copy commits from source repo to cloned repo to preserve audio mix history
+    source_commits = db.query(Commit).filter(Commit.repository_id == source.id).order_by(Commit.created_at).all()
+    last_source_commit = source_commits[-1] if source_commits else None
+    cloned_latest_commit = None
+    commit_id_map = {}
+
+    for c in source_commits:
+        new_parent_id = commit_id_map.get(c.parent_id) if c.parent_id else None
+        new_c = Commit(
+            repository_id=clone_repo.id,
+            parent_id=new_parent_id,
+            author_id=current_user.id,
+            message=f"{c.message} (cloned)",
+            prompt=c.prompt,
+            audio_url=c.audio_url,
+            duration=c.duration,
+            bpm=c.bpm,
+            key=c.key,
+            energy=c.energy,
+            mood=c.mood,
+            model_used=c.model_used,
+        )
+        db.add(new_c); db.commit(); db.refresh(new_c)
+        commit_id_map[c.id] = new_c.id
+        cloned_latest_commit = new_c
+
+        # Copy stems
+        for stem in c.stems:
+            db.add(Stem(commit_id=new_c.id, type=stem.type, audio_url=stem.audio_url, file_size=stem.file_size))
+
+    # Record the clone transaction
+    tx = CloneTransaction(
+        license_id=lic.id if lic else None,
+        original_repository_id=source.id,
+        original_commit_id=last_source_commit.id if last_source_commit else None,
+        original_creator_id=source.owner_id,
+        cloning_user_id=current_user.id,
+        clone_repository_id=clone_repo.id,
+        clone_commit_id=cloned_latest_commit.id if cloned_latest_commit else None,
+        license_mode=mode,
+        total_amount=total_amt,
+        creator_amount=creator_amt,
+        platform_fee=platform_amt,
+        currency=currency,
+        status=tx_status,
+    )
+    db.add(tx)
+    db.commit(); db.refresh(tx)
+
+    return {
+        "status": "success",
+        "message": f"Successfully cloned '{source.name}'!",
+        "transaction": {
+            "id": tx.id,
+            "mode": tx.license_mode,
+            "total_amount": tx.total_amount,
+            "creator_amount": tx.creator_amount,
+            "platform_fee": tx.platform_fee,
+            "currency": tx.currency,
+            "status": tx.status,
+        },
+        "cloned_repository": _repo_summary(clone_repo),
+    }
+
+
+@app.get("/projects/{repo_id}/clone-analytics")
+def get_clone_analytics(repo_id: str, db: Session = Depends(get_db)):
+    """
+    Return comprehensive, DB-driven clone analytics for a repository.
+    """
+    repo = db.query(Repository).filter(Repository.id == repo_id).first()
+    if not repo:
+        raise HTTPException(404, "Repository not found")
+
+    txs = db.query(CloneTransaction).filter(CloneTransaction.original_repository_id == repo_id).all()
+    total_clones = len(txs)
+    paid_clones = len([t for t in txs if t.license_mode == "paid"])
+    free_clones = len([t for t in txs if t.license_mode == "free_support"])
+    stars_from_free_clones = free_clones
+    forks_count = db.query(Repository).filter(Repository.forked_from == repo_id).count()
+    clone_revenue = sum(t.creator_amount for t in txs if t.status in ("completed", "demo_completed"))
+
+    # Find top descendant
+    descendants = db.query(Repository).filter(Repository.forked_from == repo_id).all()
+    top_descendant = None
+    if descendants:
+        best = max(descendants, key=lambda d: (d.star_count or 0) + (d.play_count or 0))
+        top_descendant = {
+            "id": best.id,
+            "name": best.name,
+            "owner": best.owner.username if best.owner else "unknown",
+            "star_count": best.star_count or 0,
+            "play_count": best.play_count or 0,
+        }
+
+    return {
+        "repository_id": repo.id,
+        "repository_name": repo.name,
+        "total_clones": total_clones,
+        "paid_clones": paid_clones,
+        "free_clones": free_clones,
+        "stars_from_free_clones": stars_from_free_clones,
+        "total_forks": forks_count,
+        "clone_revenue": round(clone_revenue, 2),
+        "currency": "INR",
+        "top_descendant": top_descendant,
+    }
+
+
+@app.get("/projects/{repo_id}/lineage")
+def get_creative_lineage(repo_id: str, db: Session = Depends(get_db)):
+    """
+    Return full creative lineage: upstream source ancestors and recursive downstream remix clones.
+    """
+    repo = db.query(Repository).filter(Repository.id == repo_id).first()
+    if not repo:
+        raise HTTPException(404, "Repository not found")
+
+    # 1. Trace ancestors
+    ancestors = []
+    curr = repo
+    while curr and curr.forked_from:
+        parent = db.query(Repository).filter(Repository.id == curr.forked_from).first()
+        if parent and parent.id != curr.id:
+            ancestors.append({
+                "id": parent.id,
+                "name": parent.name,
+                "owner": parent.owner.username if parent.owner else "unknown",
+                "avatar_url": parent.owner.avatar_url if parent.owner else "",
+                "created_at": parent.created_at.isoformat(),
+                "star_count": parent.star_count or 0,
+            })
+            curr = parent
+        else:
+            break
+
+    # 2. Trace immediate and recursive descendants
+    def get_children(r_id, depth=0):
+        if depth > 4:  # prevent infinite recursion
+            return []
+        kids = db.query(Repository).filter(Repository.forked_from == r_id).all()
+        child_list = []
+        for k in kids:
+            tx = db.query(CloneTransaction).filter(CloneTransaction.clone_repository_id == k.id).first()
+            child_list.append({
+                "id": k.id,
+                "name": k.name,
+                "owner": k.owner.username if k.owner else "unknown",
+                "avatar_url": k.owner.avatar_url if k.owner else "",
+                "created_at": k.created_at.isoformat(),
+                "license_mode": tx.license_mode if tx else "free_support",
+                "price_paid": tx.total_amount if tx else 0.0,
+                "star_count": k.star_count or 0,
+                "play_count": k.play_count or 0,
+                "children": get_children(k.id, depth + 1),
+            })
+        return child_list
+
+    descendants = get_children(repo.id)
+
+    return {
+        "repository_id": repo.id,
+        "repository_name": repo.name,
+        "owner": repo.owner.username if repo.owner else "unknown",
+        "is_original": len(ancestors) == 0,
+        "ancestors": ancestors,
+        "descendants": descendants,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────────
 def _user_public(u: User) -> dict:
+    total_stars = sum(r.star_count or 0 for r in u.repositories) if hasattr(u, 'repositories') and u.repositories else 0
+    total_clones = len(u.clone_sales) if hasattr(u, 'clone_sales') and u.clone_sales else 0
+    total_revenue = sum(tx.creator_amount or 0.0 for tx in u.clone_sales if tx.status in ("completed", "demo_completed")) if hasattr(u, 'clone_sales') and u.clone_sales else 0.0
     return {
         "id":           u.id,
         "username":     u.username,
         "bio":          u.bio,
         "avatar_url":   u.avatar_url,
         "created_at":   u.created_at.isoformat(),
-        "repo_count":   len([r for r in u.repositories if r.is_public]),
-        "follower_count": len(u.followers),
-        "following_count": len(u.following),
+        "repo_count":   len([r for r in u.repositories if r.is_public]) if hasattr(u, 'repositories') and u.repositories else 0,
+        "follower_count": len(u.followers) if hasattr(u, 'followers') and u.followers else 0,
+        "following_count": len(u.following) if hasattr(u, 'following') and u.following else 0,
+        "total_stars":  total_stars,
+        "total_clones_received": total_clones,
+        "total_clone_revenue": round(total_revenue, 2),
     }
 
 
 def _repo_summary(r: Repository) -> dict:
+    lic = r.clone_license if hasattr(r, 'clone_license') else None
+    license_data = {
+        "mode": lic.mode if lic else "free_support",
+        "price": lic.price if lic else 0.0,
+        "currency": lic.currency if lic else "INR",
+        "is_active": lic.is_active if lic else True,
+    }
+    clones_count = len(r.clone_transactions) if hasattr(r, 'clone_transactions') and r.clone_transactions else 0
+    cloned_from_user = r.fork_parent.owner.username if (r.fork_parent and r.fork_parent.owner) else None
+    forked_from_name = r.fork_parent.name if r.fork_parent else None
+
     return {
         "id":          r.id,
         "name":        r.name,
@@ -1292,11 +1684,15 @@ def _repo_summary(r: Repository) -> dict:
         "owner":       r.owner.username if r.owner else None,
         "is_public":   r.is_public,
         "forked_from": r.forked_from,
-        "star_count":  r.star_count,
-        "play_count":  r.play_count,
+        "forked_from_name": forked_from_name,
+        "cloned_from_user": cloned_from_user,
+        "star_count":  r.star_count or 0,
+        "play_count":  r.play_count or 0,
+        "clones_count": clones_count,
+        "clone_license": license_data,
         "created_at":  r.created_at.isoformat(),
         "updated_at":  r.updated_at.isoformat() if r.updated_at else None,
-        "commit_count": len(r.commits),
+        "commit_count": len(r.commits) if hasattr(r, 'commits') and r.commits else 0,
     }
 
 

@@ -428,7 +428,36 @@ select option{background:var(--bg-overlay);}
 <label>Commit message</label>
 <input type="text" id="commit-msg" placeholder="Describe this version…" style="width:100%;"/>
 </div>
-<button class="btn btn-green" style="width:100%;margin-top:4px;" onclick="saveToProject()">Commit to Project</button>
+
+<!-- Clone License Settings -->
+<div class="commit-form-row" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(58,58,58,.5);">
+<label style="font-size:11px;color:var(--accent);letter-spacing:.05em;display:flex;align-items:center;gap:4px;margin-bottom:6px;">
+<span>⚡ CLONE LICENSE</span>
+</label>
+<div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
+<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;background:rgba(237,232,223,.04);padding:8px 10px;border-radius:6px;border:1px solid var(--border);">
+<input type="radio" name="studio-clone-mode" value="free_support" checked onchange="toggleStudioLicensePrice(false)" style="margin-top:2px;">
+<div>
+<strong style="color:var(--text-primary);display:block;">Free Clone + Support</strong>
+<span style="color:var(--text-muted);font-size:11px;">Users Star + Fork to unlock</span>
+</div>
+</label>
+<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;background:rgba(237,232,223,.04);padding:8px 10px;border-radius:6px;border:1px solid var(--border);">
+<input type="radio" name="studio-clone-mode" value="paid" onchange="toggleStudioLicensePrice(true)" style="margin-top:2px;">
+<div style="flex:1;">
+<strong style="color:var(--orange);display:block;">Paid Clone</strong>
+<span style="color:var(--text-muted);font-size:11px;">Charge users a fee to clone</span>
+<div id="studio-price-wrap" style="display:none;margin-top:6px;align-items:center;gap:6px;">
+<span style="font-size:13px;color:var(--orange);font-weight:700;">₹</span>
+<input type="number" id="studio-clone-price" value="49" min="1" max="9999" style="width:80px;padding:4px 8px;font-size:12px;background:var(--bg-canvas);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);">
+<span style="font-size:11px;color:var(--text-muted);">per clone</span>
+</div>
+</div>
+</label>
+</div>
+</div>
+
+<button class="btn btn-green" style="width:100%;margin-top:8px;" onclick="saveToProject()">Commit to Project</button>
 <div style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-muted);">or</div>
 <button class="btn btn-ghost" style="width:100%;margin-top:6px;font-size:13px;" onclick="saveToLibrary()">Save to My Library</button>
 <div class="status-bar" id="save-status"></div>
@@ -2445,6 +2474,11 @@ async function masterAudio(){
   }catch(e){ showStatus('tools-status','✗ '+e.message,'err'); }
 }
 
+function toggleStudioLicensePrice(show){
+  const el=document.getElementById('studio-price-wrap');
+  if(el) el.style.display=show?'flex':'none';
+}
+
 /* ── Save to Project (commit) ─────────────────────────────────── */
 async function saveToProject(){
   if(!token){ showStatus('save-status','Sign in to commit to a project.','err'); return; }
@@ -2458,6 +2492,10 @@ async function saveToProject(){
   const msg=document.getElementById('commit-msg').value||'New beat';
   const params=new URLSearchParams(location.search);
   const parentHash=params.get('parent_hash')||undefined;
+
+  const cloneMode=document.querySelector('input[name="studio-clone-mode"]:checked')?.value||'free_support';
+  const clonePrice=cloneMode==='paid'?(parseFloat(document.getElementById('studio-clone-price')?.value)||49.0):0.0;
+
   try{
   const payload={
   filename:_currentFilename,
@@ -2465,6 +2503,8 @@ async function saveToProject(){
   prompt:document.getElementById('prompt-input').value,
   mood:document.getElementById('mood-select').value||undefined,
   parent_hash:parentHash,
+  clone_license_mode:cloneMode,
+  clone_price:clonePrice,
   };
   const r=await fetch(`${API}/projects/${repoId}/commit`,{
   method:'POST', headers:{...headers,'Content-Type':'application/json'},
@@ -2473,7 +2513,8 @@ async function saveToProject(){
   if(!r.ok){ const e=await r.json(); throw new Error(e.detail||'Commit failed'); }
   const d=await r.json();
   const hash=d.hash||d.commit_hash||d.id?.slice(0,8);
-  showStatus('save-status',`✓ Committed<code style="color:var(--blue)">${hash}</code> —<a href="repo.html?id=${repoId}" style="color:var(--blue)">View project →</a>`,'ok');
+  const licTag = cloneMode==='paid' ? ` · <span style="color:var(--orange)">₹${clonePrice} Paid Clone</span>` : ' · <span style="color:var(--green-accent)">Free + Support</span>';
+  showStatus('save-status',`✓ Committed <code style="color:var(--blue)">${hash}</code>${licTag} — <a href="repo.html?id=${repoId}" style="color:var(--blue)">View project →</a>`,'ok');
   document.getElementById('cont-btn').disabled=false;
   }catch(e){ showStatus('save-status','✗ '+e.message,'err'); }
 }
