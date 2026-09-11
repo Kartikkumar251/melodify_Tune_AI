@@ -46,6 +46,12 @@ from datetime import datetime
 from pathlib import Path
 import numpy as np
 
+_BACKEND_DIR = Path(__file__).resolve().parent
+_ROOT_DIR = _BACKEND_DIR.parent
+for _p in [str(_BACKEND_DIR), str(_ROOT_DIR)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 # ── FastAPI / Uvicorn ─────────────────────────────────────────────
 try:
     from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Query
@@ -79,10 +85,11 @@ import audio_processing as _ap
 # ── Config ───────────────────────────────────────────────────────
 MODEL_NAME      = "facebook/musicgen-small"
 DURATION_TOKENS = 320          # ~10 seconds
-OUTPUT_DIR      = Path("beat_outputs")
-STEMS_DIR       = Path("stems_outputs")
-MASTER_DIR      = Path("mastered_outputs")
-UPLOAD_TMP      = Path("upload_tmp")
+OUTPUT_DIR      = _ROOT_DIR / "beat_outputs"
+STEMS_DIR       = _ROOT_DIR / "stems_outputs"
+MASTER_DIR      = _ROOT_DIR / "mastered_outputs"
+UPLOAD_TMP      = _ROOT_DIR / "upload_tmp"
+_FRONTEND_DIR   = _ROOT_DIR / "frontend"
 for _d in [OUTPUT_DIR, STEMS_DIR, MASTER_DIR, UPLOAD_TMP]:
     _d.mkdir(exist_ok=True)
 
@@ -211,7 +218,6 @@ app.mount("/stems",   StaticFiles(directory=str(STEMS_DIR)),  name="stems")
 app.mount("/mastered",StaticFiles(directory=str(MASTER_DIR)), name="mastered")
 
 # Serve the frontend HTML files at /ui/ (same origin → no CORS issues)
-_FRONTEND_DIR = Path(__file__).parent
 app.mount("/ui", StaticFiles(directory=str(_FRONTEND_DIR), html=True), name="frontend")
 
 

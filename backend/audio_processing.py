@@ -24,9 +24,10 @@ import soundfile as sf
 import librosa
 import pyloudnorm as pyln
 
-OUTPUT_DIR = Path("beat_outputs")
-STEMS_DIR = Path("stems_outputs")
-MASTER_DIR = Path("mastered_outputs")
+_ROOT_DIR = Path(__file__).resolve().parent.parent
+OUTPUT_DIR = _ROOT_DIR / "beat_outputs"
+STEMS_DIR = _ROOT_DIR / "stems_outputs"
+MASTER_DIR = _ROOT_DIR / "mastered_outputs"
 
 for directory in [OUTPUT_DIR, STEMS_DIR, MASTER_DIR]:
     directory.mkdir(exist_ok=True)

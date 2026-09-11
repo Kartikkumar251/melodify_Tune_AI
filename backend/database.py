@@ -4,11 +4,14 @@ Configured with SQLite for local development and PostgreSQL support for producti
 """
 from __future__ import annotations
 import os
+from pathlib import Path
 from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./beatflow.db")
+ROOT_DIR = Path(__file__).resolve().parent.parent
+DB_PATH = ROOT_DIR / "beatflow.db"
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH.as_posix()}")
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
@@ -44,5 +47,9 @@ def init_db() -> None:
     """
     Initializes database schema and registers all ORM models.
     """
-    import models  # noqa: F401
+    try:
+        from . import models  # noqa: F401
+    except (ImportError, ValueError):
+        import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
+

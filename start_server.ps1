@@ -2,7 +2,7 @@
 # Usage: powershell -ExecutionPolicy Bypass -File start_server.ps1
 
 $python = "python"
-$script = "$PSScriptRoot\api_server.py"
+$script = "$PSScriptRoot\run.py"
 
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "  BeatFlow AI - Server Watchdog Launcher  " -ForegroundColor Cyan

@@ -51,52 +51,58 @@ graph TD
 
 ---
 
-## 📂 Repository Layout
+## 📂 Project Structure
 
 ```
-├── api_server.py           # Core FastAPI REST & WebSocket Server
-├── audio_processing.py     # Demucs stem splitting, Librosa analysis, AI mastering
-├── beat_generator.py       # Standalone MusicGen synthesis engine
-├── celery_worker.py        # Asynchronous job queue for compute-heavy ML tasks
-├── run_demucs.py           # Demucs runtime wrapper & format patcher
-├── models.py               # SQLAlchemy ORM schemas (Users, Repos, Commits, Stems)
-├── database.py             # Database engine & session dependency
-├── auth.py                 # Argon2 password security & JWT auth pipeline
-├── nav.js                  # Shared modern navigation component
-├── visualizer.js           # Real-time audio-reactive 60fps Canvas 2D engine
-├── index.html              # Landing page & interactive hero
-├── studio.html             # Multi-track Web DAW & Stem mixer
-├── dashboard.html          # Creator dashboard & quick generator
-├── explore.html            # Community discovery & top remix feeds
-├── repo.html               # Repository view & commit timeline
-├── project_tree.html       # Visual Git audio tree
-├── library.html            # Audio stem asset library
-├── settings.html           # Audio configuration & API preferences
-├── requirements.txt        # Full Python runtime dependencies
-├── docs/                   # Engineering blueprints & technical deep dives
-└── tests/                  # Model verification & benchmark test suite
+melodify_Tune_AI/
+├── frontend/               # Web DAW UI, Studio, Pages & Canvas Visualizers
+│   ├── index.html          # Landing page & hero audio demo
+│   ├── studio.html         # Multi-track Web DAW, Beat Generator & Stem Editor
+│   ├── dashboard.html      # Creator dashboard & quick project generator
+│   ├── explore.html        # Community discovery & remix feeds
+│   ├── projects.html       # Public project listings & search
+│   ├── repo.html           # Repository view & commit timeline
+│   ├── project_tree.html   # Visual Git audio commit graph
+│   ├── library.html        # User asset library & saved beats
+│   ├── settings.html       # Audio configuration & profile settings
+│   ├── community.html      # Creator profiles & social feed
+│   ├── nav.js              # Shared navigation component
+│   └── visualizer.js       # Real-time 60fps Canvas 2D audio visualizer
+│
+├── backend/                # FastAPI Application Server, Database & Audio Engines
+│   ├── api_server.py       # Core FastAPI REST & SSE Streaming Server
+│   ├── audio_processing.py # Multi-genre synthesis, Demucs splitting & AI mastering
+│   ├── database.py         # SQLAlchemy SQLite/PostgreSQL database engine
+│   ├── models.py           # Database schemas (Users, Repositories, Commits, Stems)
+│   ├── auth.py             # Argon2 password hashing & JWT token handling
+│   ├── celery_worker.py    # Asynchronous job queue for background audio compute
+│   └── run_demucs.py       # Demucs runtime wrapper
+│
+├── ml/                     # Machine Learning & AI Generation Scripts
+│   ├── beat_generator.py   # Standalone MusicGen inference engine
+│   └── setup_musicgen.bat  # Automated model cache downloader
+│
+├── docs/                   # Architectural blueprints & documentation
+├── tests/                  # Verification scripts & audio tests
+├── run.py                  # Single-command launcher (python run.py)
+├── start_server.ps1        # PowerShell server watchdog launcher
+├── install_deps.ps1        # Dependency installer
+├── requirements.txt        # Python dependency manifest
+└── README.md               # Project documentation
 ```
 
 ---
 
 ## ⚡ Quickstart Guide
 
-### 1. Clone & Setup Environment
+### 1. Run the Platform
 
 ```bash
-# Clone the repository
-git clone <repository_url>
-cd <repository_name>
-
-# Create and activate virtual environment
-python -m venv .venv
-# On Windows:
-.venv\Scripts\activate
-# On Linux/macOS:
-source .venv/bin/activate
+# Launch the API server and Web DAW
+python run.py
 ```
 
-### 2. Install Dependencies
+Open your browser to **[http://localhost:8000/ui/studio.html](http://localhost:8000/ui/studio.html)** to start creating!
 
 ```bash
 pip install -r requirements.txt

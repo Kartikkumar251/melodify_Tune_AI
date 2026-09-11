@@ -8,10 +8,17 @@ Includes automated in-memory fakeredis fallback if external Redis broker is not 
 """
 from __future__ import annotations
 import os
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple, Dict, Any, Optional
+
+_BACKEND_DIR = Path(__file__).resolve().parent
+_ROOT_DIR = _BACKEND_DIR.parent
+for _p in [str(_BACKEND_DIR), str(_ROOT_DIR)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from celery import Celery
 
