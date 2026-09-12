@@ -72,7 +72,8 @@ from transformers import AutoProcessor, MusicgenForConditionalGeneration
 
 # ── Database ──────────────────────────────────────────────────────
 from database import init_db, get_db
-from models import User, Repository, Commit, Stem, Star, Follow, Comment, CloneLicense, CloneTransaction
+from models import User, Repository, Commit, Stem, Star, Follow, Comment, CloneLicense, CloneTransaction, ActivityEvent
+from activity_service import log_activity, EventType
 from auth import (
     hash_password, verify_password,
     create_access_token, get_current_user, get_current_user_optional
@@ -827,6 +828,19 @@ def separate(req: SeparateRequest, db: Session = Depends(get_db)):
                         s = Stem(commit_id=req.commit_id, type=stem_type, audio_url=url)
                         db.add(s)
                 db.commit()
+
+                # Activity Log: Stem Separation
+                log_activity(
+                    db,
+                    repo_id=commit_obj.repository_id,
+                    event_type=EventType.STEM_SEPARATED,
+                    title="Separated 4 Stems (HTDemucs)",
+                    description=f"Isolated Drums, Bass, Vocals, Other stems for commit {commit_obj.commit_hash}",
+                    user_id=commit_obj.author_id,
+                    commit_id=commit_obj.id,
+                    metadata={"stems": list(stem_urls.keys()), "commit_hash": commit_obj.commit_hash}
+                )
+
         return {"stems": stem_urls, "saved_to_db": req.commit_id is not None}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1151,6 +1165,17 @@ def create_project(
         is_public=req.is_public,
     )
     db.add(repo); db.commit(); db.refresh(repo)
+
+    # Activity Log: Project Created
+    log_activity(
+        db,
+        repo_id=repo.id,
+        event_type=EventType.PROJECT_CREATED,
+        title=f"Project Created — '{repo.name}'",
+        description=repo.description or "Initialized audio workspace repository.",
+        user_id=current_user.id,
+    )
+
     return _repo_summary(repo)
 
 
@@ -1162,6 +1187,46 @@ def get_project(repo_id: str, db: Session = Depends(get_db)):
     commits = db.query(Commit).filter(Commit.repository_id == repo_id)\
                 .order_by(Commit.created_at.desc()).all()
     return {**_repo_summary(repo), "commits": [_commit_summary(c) for c in commits]}
+
+
+@app.get("/projects/{repo_id}/activity")
+def get_project_activity_endpoint(
+    repo_id: str,
+    limit: int = Query(30, le=100),
+    offset: int = Query(0, ge=0),
+    page: Optional[int] = Query(None, ge=1),
+    type: Optional[str] = Query(None, description="all | commits | audio | lineage | social"),
+    filter_category: Optional[str] = Query(None, description="all | commits | audio | lineage | social"),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns GitHub-style chronological activity & event history for a project.
+    """
+    repo = db.query(Repository).filter(Repository.id == repo_id).first()
+    if not repo:
+        raise HTTPException(404, "Repository not found")
+    if not repo.is_public and (not current_user or current_user.id != repo.owner_id):
+        raise HTTPException(403, "Access denied to private repository activity")
+
+    if page is not None and page > 1:
+        offset = (page - 1) * limit
+
+    active_filter = filter_category or type
+    from activity_service import get_project_activities
+    events, total = get_project_activities(db, repo_id=repo_id, limit=limit, offset=offset, event_type_filter=active_filter)
+    return {
+        "repository_id": repo.id,
+        "repository_name": repo.name,
+        "total": total,
+        "total_count": total,
+        "limit": limit,
+        "offset": offset,
+        "page": page or (offset // limit + 1),
+        "has_more": (offset + len(events)) < total,
+        "events": events,
+        "activities": events,
+    }
 
 
 @app.post("/projects/{repo_id}/fork")
@@ -1183,6 +1248,28 @@ def fork_project(
     db.add(fork); db.commit(); db.refresh(fork)
     source.star_count = (source.star_count or 0) + 1
     db.commit()
+
+    # Activity Log on fork & source
+    src_owner = source.owner.username if source.owner else "creator"
+    log_activity(
+        db,
+        repo_id=fork.id,
+        event_type=EventType.FORK_CREATED,
+        title=f"Forked from @{src_owner}/{source.name}",
+        description=f"Created new remix branch from upstream audio history.",
+        user_id=current_user.id,
+        metadata={"source_repo_id": source.id, "source_repo_name": source.name},
+    )
+    log_activity(
+        db,
+        repo_id=source.id,
+        event_type=EventType.FORK_CREATED,
+        title=f"Forked by @{current_user.username}",
+        description=f"@{current_user.username} created a remix fork '{fork.name}'",
+        user_id=current_user.id,
+        metadata={"fork_repo_id": fork.id, "fork_repo_name": fork.name},
+    )
+
     return _repo_summary(fork)
 
 
@@ -1278,6 +1365,26 @@ def create_commit(
             lic.price = price
             lic.commit_id = commit.id
         db.commit()
+
+    # Activity Log: Commit Created
+    log_activity(
+        db,
+        repo_id=repo_id,
+        event_type=EventType.COMMIT_CREATED,
+        title=f"Committed \"{commit.message}\"",
+        description=f"Snapshot {commit.commit_hash} · BPM: {commit.bpm or 'N/A'} · Key: {commit.key or 'N/A'}",
+        user_id=current_user.id,
+        commit_id=commit.id,
+        metadata={
+            "hash": commit.commit_hash,
+            "bpm": commit.bpm,
+            "key": commit.key,
+            "mood": commit.mood,
+            "prompt": commit.prompt,
+            "duration": commit.duration,
+            "parent_id": commit.parent_id,
+        }
+    )
 
     return _commit_summary(commit)
 
@@ -1514,6 +1621,27 @@ def clone_project(
     )
     db.add(tx)
     db.commit(); db.refresh(tx)
+
+    # Activity Log on Cloned Repo and Source Repo
+    src_owner = source.owner.username if source.owner else "creator"
+    log_activity(
+        db,
+        repo_id=clone_repo.id,
+        event_type=EventType.CLONE_CREATED,
+        title=f"Cloned from @{src_owner}/{source.name}",
+        description=f"Cloned project mix via {mode.upper()} license (Fee: ₹{total_amt})",
+        user_id=current_user.id,
+        metadata={"source_repo_id": source.id, "source_repo_name": source.name, "license_mode": mode, "price": total_amt},
+    )
+    log_activity(
+        db,
+        repo_id=source.id,
+        event_type=EventType.CLONE_CREATED,
+        title=f"Cloned by @{current_user.username}",
+        description=f"@{current_user.username} created clone '{clone_repo.name}' via {mode.upper()} license (Creator earned: ₹{creator_amt})",
+        user_id=current_user.id,
+        metadata={"cloned_repo_id": clone_repo.id, "cloned_repo_name": clone_repo.name, "license_mode": mode, "earned": creator_amt},
+    )
 
     return {
         "status": "success",
@@ -1790,6 +1918,17 @@ def star_project(
     db.add(star)
     repo.star_count = (repo.star_count or 0) + 1
     db.commit()
+
+    # Activity Log: Star Added
+    log_activity(
+        db,
+        repo_id=repo_id,
+        event_type=EventType.STAR_ADDED,
+        title=f"Starred by @{current_user.username}",
+        description="Added to user favorites.",
+        user_id=current_user.id,
+    )
+
     return {"starred": True, "star_count": repo.star_count}
 
 
@@ -2003,6 +2142,19 @@ def add_comment(
     comment = Comment(commit_id=commit_id, author_id=current_user.id,
                       body=req.body.strip())
     db.add(comment); db.commit(); db.refresh(comment)
+
+    # Activity Log: Comment Added
+    log_activity(
+        db,
+        repo_id=repo_id,
+        event_type=EventType.COMMENT_ADDED,
+        title=f"Comment from @{current_user.username}",
+        description=f"\"{req.body.strip()[:80]}\"",
+        user_id=current_user.id,
+        commit_id=commit_id,
+        metadata={"commit_hash": commit.commit_hash},
+    )
+
     return {"id": comment.id, "body": comment.body,
             "author": current_user.username,
             "created_at": comment.created_at.isoformat()}
@@ -2873,6 +3025,17 @@ Compatible with Ableton Live, FL Studio, Logic Pro, Pro Tools.
 
     zip_buffer.seek(0)
     zip_name = f"{_safe_name(repo.name)}_{commit.commit_hash[:7]}_stempack.zip"
+
+    # Activity Log: Export Created
+    log_activity(
+        db,
+        repo_id=repo_id,
+        event_type=EventType.EXPORT_CREATED,
+        title="Exported Stem Pack ZIP",
+        description=f"Generated ZIP package (Master audio + Stems + MIDI + Metadata) for {commit.commit_hash}",
+        commit_id=commit.id,
+        metadata={"filename": zip_name, "commit_hash": commit.commit_hash}
+    )
 
     return Response(
         content=zip_buffer.getvalue(),

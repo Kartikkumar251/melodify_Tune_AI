@@ -75,6 +75,7 @@ class Repository(Base):
     fork_parent = relationship("Repository", remote_side="Repository.id", foreign_keys=[forked_from])
     clone_license = relationship("CloneLicense", back_populates="repository", uselist=False, cascade="all, delete-orphan")
     clone_transactions = relationship("CloneTransaction", back_populates="original_repository", foreign_keys="[CloneTransaction.original_repository_id]", cascade="all, delete-orphan")
+    activities = relationship("ActivityEvent", back_populates="repository", cascade="all, delete-orphan", order_by="ActivityEvent.created_at.desc()")
 
     def __repr__(self) -> str:
         return f"<Repository name='{self.name}' id='{self.id[:8]}'>"
@@ -252,3 +253,31 @@ class CloneTransaction(Base):
 
     def __repr__(self) -> str:
         return f"<CloneTransaction mode='{self.license_mode}' amt={self.total_amount} cloner='{self.cloning_user_id[:8]}'>"
+
+
+# ── Project Activity & Change Timeline Entity ─────────────────────
+class ActivityEvent(Base):
+    """
+    Chronological event log for project lifecycle actions:
+    creation, commits, stem separation, mastering, hum-to-beat, forks, clones, stars, etc.
+    """
+    __tablename__ = "activity_events"
+
+    id: str = Column(String(36), primary_key=True, default=_uuid)
+    repository_id: str = Column(String(36), ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Optional[str] = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    commit_id: Optional[str] = Column(String(36), ForeignKey("commits.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    event_type: str = Column(String(50), nullable=False, index=True)
+    title: str = Column(String(200), nullable=False)
+    description: str = Column(Text, default="")
+    metadata_json: Optional[str] = Column(Text, nullable=True)  # Serialized JSON dict of metrics, tags, deltas
+    created_at: datetime = Column(DateTime, default=_now, index=True)
+
+    repository = relationship("Repository", back_populates="activities")
+    user = relationship("User")
+    commit = relationship("Commit")
+
+    def __repr__(self) -> str:
+        return f"<ActivityEvent type='{self.event_type}' repo='{self.repository_id[:8]}' title='{self.title[:20]}'>"
+

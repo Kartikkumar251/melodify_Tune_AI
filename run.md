@@ -118,6 +118,27 @@ melodify_Tune_AI/
 - **Endpoints**: `GET /projects`, `POST /projects`, `POST /projects/{id}/commit`, `POST /projects/{id}/fork`, `GET /projects/{id}/diff/compare`.
 - Supports branching, commit trees, commit comments, audio waveform diffs, and project stars/forks.
 
+### 12. GitHub-Style Project Activity & Change Timeline
+- **Endpoints**: `GET /projects/{repo_id}/activity`
+- **Frontend Tab**: `⚡ Activity` tab on `frontend/repo.html`
+- **Features**:
+  - Automatically records discrete, chronological activity events for all project lifecycle actions:
+    - `● Project Created`
+    - `● Audio / Beat Added`
+    - `● Stems Separated`
+    - `● AI Master Applied`
+    - `● Track Continued / Extended`
+    - `● Commit Created` (with audio playback & diff links)
+    - `● Project Forked / Cloned` (with lineage tracking)
+    - `● Project Starred & Commented`
+  - GitHub-style vertical connected timeline with color-coded node dots:
+    - 🟢 Green dots for Commits & Beat generations
+    - 🔵 Blue dots for Audio DSP & Stem separation
+    - 🟣 Purple dots for Forks & Clones
+    - 🟠 Orange dots for Stars & Comments
+    - 🟡 Gold dots for Stem Pack ZIP exports
+  - Fast filtering by category (`Commits Only`, `Audio & AI Processing`, `Forks & Clones`, `Stars & Comments`) with infinite pagination and JSON metadata inspector.
+
 ---
 
 ## 4. How to Run and Reproduce on Any System
@@ -161,42 +182,28 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 ### Step 4: Open in Web Browser
 - **Studio DAW (Full Workspace)**: [http://localhost:8000/ui/studio.html](http://localhost:8000/ui/studio.html)
 - **Community Hub & Discovery**: [http://localhost:8000/ui/index.html](http://localhost:8000/ui/index.html)
+- **Project Repository & Activity**: [http://localhost:8000/ui/repo.html](http://localhost:8000/ui/repo.html)
 - **API Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
 
 ---
 
 ## 5. Automated Verification & Testing
 
-To verify all 11 endpoints and features in under 30 seconds, run the automated audit suite:
-
+### 1. Run Complete 11-Feature Platform Audit:
 ```bash
-python scratch/test_all_features_audit.py
+python tests/test_audit.py
+```
+
+### 2. Run GitHub-Style Activity Timeline Integration Suite:
+```bash
+python tests/test_activity_timeline.py
 ```
 
 ### Expected Output:
 ```text
-============================================================
-  MELODIFY COMPLETE AUDIT & INTEGRATION TEST SUITE
-============================================================
-  [OK] [1/11] Health Check OK: {'status': 'ok', ...}
-  [OK] [2/11] Generated [lofi]: lofi_xxxxxx.wav (10.0s)
-  [OK] [2/11] Generated [synthwave]: synthwave_xxxxxx.wav (10.0s)
-  [OK] [2/11] Generated [trap]: trap_xxxxxx.wav (10.0s)
-  [OK] [2/11] Generated [rock]: rock_xxxxxx.wav (10.0s)
-  [OK] [2/11] Generated [piano]: piano_xxxxxx.wav (10.0s)
-  [OK] [3/11] Analysis OK: BPM=39.9, Key=C# Major, Loudness=-19.3dB
-  [OK] [4/11] Stem Separation OK (Drums, Bass, Vocals, Other stems generated)
-  [OK] [5/11] AI Mastering OK: mastered_xxxxxx.wav, Mastered LUFS=-20.7
-  [OK] [6/11] Track Continuation OK: continued_xxxxxx.wav (19.5s)
-  [OK] [7/11] Hum-to-Beat OK: hum_beat_xxxxxx.wav (10.0s)
-  [OK] [8/11] FCA Optimization [LOSSLESS] OK: xxxxxx_fca_l.fca (Ratio: 1.35:1, Savings: 25.76%)
-  [OK] [8/11] FCA Optimization [PERCEPTUAL] OK: xxxxxx_fca_p_q6.fca (Ratio: 1.35:1, Savings: 25.74%)
-  [OK] [9/11] Audio to MIDI OK: xxxxxx.mid
-  [OK] [10/11] Lyrics Generator OK: 7 sections generated
-  [OK] [11/11] Prompt Autocomplete OK: suggestions for 'trap'
-============================================================
-  ALL 11 FEATURES AUDITED & VERIFIED SUCCESSFULLY!
-============================================================
+========================================================
+  [SUCCESS] All 11 Activity Timeline assertions passed!
+========================================================
 ```
 
 ---
@@ -218,6 +225,8 @@ python scratch/test_all_features_audit.py
 | `/tools/generate-lyrics` | `POST` | Generate structured song lyrics by mood/genre |
 | `/tools/prompt-autocomplete` | `GET` | Get real-time prompt search suggestions |
 | `/projects` | `GET / POST` | List or create version-controlled music repositories |
+| `/projects/{id}/activity` | `GET` | GitHub-style chronological activity & event timeline |
 | `/projects/{id}/commit` | `POST` | Commit a new beat version to a repository |
 | `/projects/{id}/diff/compare` | `GET` | Harmonic & waveform diff between two commits |
 | `/projects/{repo_id}/commits/{commit_id}/export-stems` | `GET` | Download full Stem Pack ZIP archive |
+

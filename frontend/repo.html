@@ -135,6 +135,26 @@ audio{width:100%;height:36px;border-radius:6px;accent-color:var(--orange);}
 .viz-wrap{width:100%;border-radius:8px;overflow:hidden;position:relative;background:#07070a;}
 .viz-wrap-featured{height:90px;margin-bottom:14px;}
 .viz-wrap-commit{height:60px;margin-bottom:8px;}
+
+/* ── ACTIVITY TIMELINE ── */
+.activity-timeline-wrap{position:relative;padding:10px 0 10px 14px;}
+.activity-timeline-wrap::before{content:'';position:absolute;left:21px;top:20px;bottom:20px;width:2px;background:var(--border-muted);}
+.activity-item{position:relative;display:flex;align-items:flex-start;gap:16px;padding:12px 0;transition:all .15s ease;}
+.activity-dot{width:16px;height:16px;border-radius:50%;background:var(--bg-inset);border:2.5px solid #50c878;flex-shrink:0;margin-top:4px;z-index:2;box-shadow:0 0 8px rgba(80,200,120,.4);}
+.activity-dot.dot-commit{border-color:#50c878;box-shadow:0 0 8px rgba(80,200,120,.5);}
+.activity-dot.dot-audio{border-color:#58a6ff;box-shadow:0 0 8px rgba(88,166,255,.4);}
+.activity-dot.dot-lineage{border-color:#bc8cff;box-shadow:0 0 8px rgba(188,140,255,.4);}
+.activity-dot.dot-social{border-color:#f0883e;box-shadow:0 0 8px rgba(240,136,62,.4);}
+.activity-dot.dot-export{border-color:#e3b341;box-shadow:0 0 8px rgba(227,179,65,.4);}
+.activity-card{flex:1;min-width:0;background:rgba(22,22,26,.65);border:1px solid var(--border-muted);border-radius:10px;padding:12px 16px;transition:border-color .15s,transform .12s;}
+.activity-card:hover{border-color:var(--border);transform:translateX(2px);}
+.activity-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
+.activity-title{font-size:13.5px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px;}
+.activity-desc{font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin-bottom:6px;word-break:break-word;}
+.activity-meta-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:6px;background:var(--bg-inset);border:1px solid var(--border-muted);color:var(--text-muted);}
+.activity-expand-btn{background:none;border:none;color:var(--blue);font-size:11.5px;cursor:pointer;padding:0;text-decoration:none;font-weight:500;}
+.activity-expand-btn:hover{text-decoration:underline;}
+.activity-details-panel{display:none;margin-top:10px;padding:10px 12px;background:var(--bg-inset);border-radius:8px;border:1px solid var(--border-muted);font-size:12px;}
 </style>
 </head>
 <body>
@@ -156,6 +176,7 @@ audio{width:100%;height:36px;border-radius:6px;accent-color:var(--orange);}
 <!-- TABS -->
 <div class="tabs">
 <button class="tab-btn active" onclick="switchTab('commits',this)"><span id="tab-commits-label">Commits</span></button>
+<button class="tab-btn" onclick="switchTab('activity',this)"><span id="tab-activity-label">⚡ Activity</span></button>
 <button class="tab-btn" onclick="switchTab('diff',this)">Audio Diff</button>
 <button class="tab-btn" onclick="switchTab('tree',this)">Tree</button>
 <button class="tab-btn" onclick="switchTab('lineage',this)"><span id="tab-lineage-label">🌿 Lineage</span></button>
@@ -171,6 +192,38 @@ audio{width:100%;height:36px;border-radius:6px;accent-color:var(--orange);}
 <div class="skeleton" style="height:60px;border-radius:8px;"></div>
 <div class="skeleton" style="height:60px;border-radius:8px;"></div>
 </div>
+</div>
+</div>
+
+<!-- ACTIVITY TIMELINE TAB -->
+<div id="tab-activity" class="tab-content">
+<div class="glass" style="padding:24px;border-radius:12px;margin-bottom:24px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h3 style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px;">⚡ Project Activity & Event Timeline</h3>
+      <p style="font-size:13px;color:var(--text-muted);">Real-time GitHub-style chronological change history for this project.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <select id="activity-filter" onchange="filterActivity(this.value)" style="background:var(--bg-inset);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text-primary);font-size:12px;outline:none;">
+        <option value="all">All Activities</option>
+        <option value="commits">Commits Only</option>
+        <option value="audio">Audio & AI Processing</option>
+        <option value="lineage">Forks & Clones</option>
+        <option value="social">Stars & Comments</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="loadActivity(true)">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- Timeline Container -->
+  <div id="activity-timeline-container" class="activity-timeline-wrap">
+    <div class="loading-pulse" style="padding:40px;color:var(--text-muted);text-align:center;">Loading project activity…</div>
+  </div>
+
+  <!-- Load More Button -->
+  <div id="activity-load-more-wrap" style="display:none;text-align:center;margin-top:20px;">
+    <button class="btn btn-ghost btn-sm" onclick="loadMoreActivity()" id="activity-load-more-btn">Load Older Activity ↓</button>
+  </div>
 </div>
 </div>
 
@@ -305,6 +358,9 @@ function switchTab(tab, btn){
   if(tab==='tree' && _repoId){
     const iframe=document.getElementById('tree-iframe');
     if(!iframe.src) iframe.src=`project_tree.html?project=${_repoId}&embed=1`;
+  }
+  if(tab==='activity' && _repoId){
+    loadActivity();
   }
   if(tab==='lineage' && _repoId){
     loadCreativeLineage();
@@ -1283,6 +1339,173 @@ async function saveLicenseSettings(){
   document.body.appendChild(lm);
   lm.addEventListener('click', e=>{ if(e.target===lm) closeLicenseSettingsModal(); });
 })();
+
+/* ── Project Activity Timeline ───────────────────────────────── */
+let _activityPage = 1;
+let _activityHasMore = false;
+let _activityFilter = 'all';
+let _activityItems = [];
+let _activityLoading = false;
+
+async function loadActivity(reset = false) {
+  if (!_repoId) return;
+  if (reset) {
+    _activityPage = 1;
+    _activityItems = [];
+  }
+  const container = document.getElementById('activity-timeline-container');
+  const loadMoreWrap = document.getElementById('activity-load-more-wrap');
+  
+  if (_activityPage === 1 && container) {
+    container.innerHTML = '<div class="loading-pulse" style="padding:40px;color:var(--text-muted);text-align:center;">Loading project activity…</div>';
+  }
+
+  _activityLoading = true;
+  try {
+    const url = `${API}/projects/${_repoId}/activity?page=${_activityPage}&limit=15&filter_category=${encodeURIComponent(_activityFilter)}`;
+    const r = await fetch(url, { headers });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    const items = data.activities || [];
+    _activityHasMore = data.has_more || false;
+
+    if (_activityPage === 1) {
+      _activityItems = items;
+      const count = data.total_count || items.length;
+      const tabLabel = document.getElementById('tab-activity-label');
+      if (tabLabel) tabLabel.textContent = `⚡ Activity (${count})`;
+    } else {
+      _activityItems = _activityItems.concat(items);
+    }
+
+    if (!_activityItems.length) {
+      if (container) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding:40px 20px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:12px;">⚡</div>
+            <p style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">No activity events found</p>
+            <p style="font-size:13px;color:var(--text-muted);max-width:380px;margin:0 auto 16px;">
+              ${_activityFilter === 'all' ? 'Activity is recorded automatically whenever someone commits, forks, stars, or performs audio processing.' : 'No events found matching this filter.'}
+            </p>
+            ${_activityFilter !== 'all' ? `<button class="btn btn-ghost btn-sm" onclick="filterActivity('all')">View All Activities</button>` : ''}
+          </div>
+        `;
+      }
+      if (loadMoreWrap) loadMoreWrap.style.display = 'none';
+      return;
+    }
+
+    if (container) {
+      container.innerHTML = _activityItems.map((act, i) => renderActivityItem(act, i)).join('');
+    }
+    if (loadMoreWrap) {
+      loadMoreWrap.style.display = _activityHasMore ? 'block' : 'none';
+    }
+
+  } catch (err) {
+    console.error('Activity load error:', err);
+    if (_activityPage === 1 && container) {
+      container.innerHTML = `<div style="padding:30px;color:var(--red);text-align:center;">Failed to load activity: ${err.message}</div>`;
+      if (loadMoreWrap) loadMoreWrap.style.display = 'none';
+    }
+  } finally {
+    _activityLoading = false;
+  }
+}
+
+function filterActivity(cat) {
+  _activityFilter = cat || 'all';
+  const filterSelect = document.getElementById('activity-filter');
+  if (filterSelect && filterSelect.value !== _activityFilter) {
+    filterSelect.value = _activityFilter;
+  }
+  loadActivity(true);
+}
+
+function loadMoreActivity() {
+  if (_activityLoading || !_activityHasMore) return;
+  _activityPage += 1;
+  loadActivity(false);
+}
+
+function renderActivityItem(item, idx) {
+  const dotClass = item.badge_class || 'dot-commit';
+  const icon = item.icon || '●';
+  const meta = item.metadata || {};
+  const hasMeta = Object.keys(meta).length > 0;
+  const eventId = `act-${item.id || idx}`;
+
+  let metaPills = '';
+  if (meta.bpm) metaPills += `<span class="activity-pill">♩ ${Math.round(meta.bpm)} BPM</span>`;
+  if (meta.key) metaPills += `<span class="activity-pill">🎹 ${meta.key}</span>`;
+  if (meta.mood) metaPills += `<span class="activity-pill">✨ ${meta.mood}</span>`;
+  if (meta.duration) metaPills += `<span class="activity-pill">⏱ ${Number(meta.duration).toFixed(1)}s</span>`;
+  if (meta.stems_count) metaPills += `<span class="activity-pill">🎛 ${meta.stems_count} Stems</span>`;
+  if (meta.parent_project_name) metaPills += `<span class="activity-pill">🌿 Source: ${meta.parent_project_name}</span>`;
+
+  let commitAudioPlayer = '';
+  if (meta.audio_url) {
+    const audioSrc = `${API}${meta.audio_url}`;
+    commitAudioPlayer = `
+      <div style="margin-top:10px;">
+        <audio controls src="${audioSrc}" preload="none" style="width:100%;height:32px;border-radius:6px;accent-color:var(--orange);"></audio>
+      </div>
+    `;
+  }
+
+  let quickActions = '';
+  if (item.commit_hash) {
+    quickActions = `
+      <div style="display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+        <a href="project_tree.html?project=${_repoId}" class="btn btn-ghost btn-xs" style="font-family:monospace;border-color:rgba(237,232,223,.15);">
+          🌳 ${item.commit_hash}
+        </a>
+        <button class="btn btn-ghost btn-xs" onclick="switchTab('diff', document.querySelectorAll('.tab-btn')[2])" style="font-size:11px;border-color:rgba(237,232,223,.15);">
+          🔍 Diff
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="activity-item fade-in visible" id="${eventId}">
+      <div class="activity-dot ${dotClass}" title="${item.event_type}">
+        ${icon}
+      </div>
+      <div class="activity-card">
+        <div class="activity-header">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="activity-avatar">${(item.author || 'U').substring(0, 1).toUpperCase()}</div>
+            <strong style="color:var(--text-primary);font-size:13px;">${item.author || 'User'}</strong>
+            <span class="activity-title">${item.title || 'Project Action'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="activity-time" title="${item.created_at}">${item.relative_time || timeAgo(item.created_at)}</span>
+            ${hasMeta ? `<button class="btn-cancel" onclick="toggleActivityDetails('${eventId}-meta')" style="padding:2px 6px;font-size:10px;" title="View Metadata">JSON</button>` : ''}
+          </div>
+        </div>
+
+        ${item.description ? `<div class="activity-desc">${item.description}</div>` : ''}
+        ${metaPills ? `<div class="activity-meta-pills">${metaPills}</div>` : ''}
+        ${commitAudioPlayer}
+        ${quickActions}
+
+        ${hasMeta ? `
+          <div id="${eventId}-meta" class="activity-meta-json">
+            <pre style="margin:0;font-size:11px;color:var(--text-muted);white-space:pre-wrap;">${JSON.stringify(meta, null, 2)}</pre>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function toggleActivityDetails(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+}
 
 function openCreateModal(){
   document.getElementById('cr-name').value='';
