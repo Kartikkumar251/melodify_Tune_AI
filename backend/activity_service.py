@@ -298,7 +298,7 @@ def get_project_activities(
             query = query.filter(ActivityEvent.event_type == event_type_filter)
 
     total_count = query.count()
-    events = query.order_by(ActivityEvent.created_at.desc()).offset(offset).limit(limit).all()
+    events = query.order_by(ActivityEvent.created_at.desc(), ActivityEvent.id.desc()).offset(offset).limit(limit).all()
 
     formatted = [format_event_dict(e) for e in events]
     return formatted, total_count

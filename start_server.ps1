@@ -1,5 +1,6 @@
 # BeatFlow AI (Melodyfy) - Server Watchdog Launcher
 # Usage: powershell -ExecutionPolicy Bypass -File start_server.ps1
+$env:PYTHONUNBUFFERED = "1"
 $python = "python"
 $script = "$PSScriptRoot\run.py"
 

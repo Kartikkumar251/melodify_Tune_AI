@@ -1319,7 +1319,7 @@ def create_commit(
         if latest:
             parent_id = latest.id
 
-    # Auto-analyze
+    # Auto-analyze if bpm/key missing
     bpm = key = energy = None
     try:
         from audio_processing import analyze_audio
@@ -1346,6 +1346,32 @@ def create_commit(
     repo.updated_at = datetime.utcnow()
     db.commit(); db.refresh(commit)
 
+    # Check for any generated stems for this audio file and automatically link them to the commit
+    stem_count = 0
+    try:
+        base_name = Path(req.filename).stem
+        # Check stems_outputs for folder or prefixed files
+        stem_folder = STEMS_DIR / base_name
+        stem_candidates = []
+        if stem_folder.is_dir():
+            for sf in stem_folder.glob("*.wav"):
+                st_type = sf.stem.lower()
+                stem_candidates.append((st_type, f"/stems/{base_name}/{sf.name}", sf.stat().st_size if sf.exists() else None))
+        else:
+            for st_type in ["drums", "bass", "vocals", "other"]:
+                possible = STEMS_DIR / f"{base_name}_{st_type}.wav"
+                if possible.is_file():
+                    stem_candidates.append((st_type, f"/stems/{possible.name}", possible.stat().st_size))
+
+        for st_type, st_url, st_size in stem_candidates:
+            stem_record = Stem(commit_id=commit.id, type=st_type, audio_url=st_url, file_size=st_size)
+            db.add(stem_record)
+            stem_count += 1
+        if stem_count > 0:
+            db.commit()
+    except Exception as e:
+        logger.warning(f"Error auto-linking stems to commit: {e}")
+
     # If creator configured a Clone License during commit, apply it to this repository
     if req.clone_license_mode in ("free_support", "paid"):
         lic = db.query(CloneLicense).filter(CloneLicense.repository_id == repo_id).first()
@@ -1366,22 +1392,28 @@ def create_commit(
             lic.commit_id = commit.id
         db.commit()
 
-    # Activity Log: Commit Created
+    # Calculate commit number on this repository for GitHub-style labeling
+    commit_num = db.query(Commit).filter(Commit.repository_id == repo_id).count()
+
+    # Activity Log: Commit Created (with synchronized audio metadata)
     log_activity(
         db,
         repo_id=repo_id,
         event_type=EventType.COMMIT_CREATED,
-        title=f"Committed \"{commit.message}\"",
-        description=f"Snapshot {commit.commit_hash} · BPM: {commit.bpm or 'N/A'} · Key: {commit.key or 'N/A'}",
+        title=f"Commit #{commit_num} — \"{commit.message}\"",
+        description=f"Snapshot {commit.commit_hash} · BPM: {commit.bpm or 'N/A'} · Key: {commit.key or 'N/A'}" + (f" · {stem_count} Stems" if stem_count > 0 else ""),
         user_id=current_user.id,
         commit_id=commit.id,
         metadata={
             "hash": commit.commit_hash,
+            "commit_num": commit_num,
             "bpm": commit.bpm,
             "key": commit.key,
             "mood": commit.mood,
             "prompt": commit.prompt,
             "duration": commit.duration,
+            "audio_url": commit.audio_url,
+            "stems_count": stem_count,
             "parent_id": commit.parent_id,
         }
     )
