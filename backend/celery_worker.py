@@ -27,12 +27,12 @@ def _setup_broker() -> Tuple[str, str]:
     """
     Initializes Redis broker connection with automatic fallback to in-memory fake server.
     """
-    real_broker = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-    real_backend = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
+    real_broker = os.getenv("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
+    real_backend = os.getenv("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/1")
 
     try:
         import redis as _redis_lib
-        r = _redis_lib.Redis.from_url(real_broker, socket_connect_timeout=1, socket_timeout=1)
+        r = _redis_lib.Redis.from_url(real_broker, socket_connect_timeout=0.2, socket_timeout=0.2)
         r.ping()
         return real_broker, real_backend
     except Exception:

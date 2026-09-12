@@ -659,26 +659,18 @@ def health():
     redis_ok   = False
     redis_mode = "unavailable"
     try:
-        import redis as _redis
-        _r = _redis.Redis(socket_connect_timeout=1, socket_timeout=1)
-        _r.ping()
-        redis_ok   = True
-        redis_mode = "connected"
+        from celery_worker import celery_app as _ca, BROKER as _broker
+        if "memory://" in _broker or "fakeredis" in _broker:
+            redis_ok   = True
+            redis_mode = "connected (in-memory)"
+        else:
+            import redis as _redis
+            _r = _redis.Redis(host="127.0.0.1", port=6379, socket_connect_timeout=0.2, socket_timeout=0.2)
+            _r.ping()
+            redis_ok   = True
+            redis_mode = "connected"
     except Exception:
-        # Check if Celery is using in-memory fakeredis / memory:// broker
-        try:
-            from celery_worker import celery_app as _ca, BROKER as _broker
-            if "memory://" in _broker or "fakeredis" in _broker:
-                redis_ok   = True
-                redis_mode = "connected (in-memory)"
-            else:
-                # Try to inspect celery workers
-                insp = _ca.control.inspect(timeout=0.5)
-                if insp.ping():
-                    redis_ok   = True
-                    redis_mode = "connected"
-        except Exception:
-            pass
+        pass
     return {
         "status":    "ok",
         "device":    _device,
@@ -881,37 +873,61 @@ def continue_beat_endpoint(req: ContinueRequest):
 async def hum_to_beat_endpoint(
     file: Optional[UploadFile] = File(None),
     audio: Optional[UploadFile] = File(None),
+    filename: Optional[str] = Form(None),
     prompt: str = Form(default="upbeat electronic beat"),
 ):
-    """Upload or record a hummed melody and get a generated beat."""
+    """Upload or record a hummed melody, or reference an uploaded audio file, and get a generated distinct beat."""
     upload_f = file or audio
-    if not upload_f:
-        raise HTTPException(status_code=400, detail="No audio file or voice recording provided.")
-    try:
+    tmp_path = None
+    should_cleanup = False
+
+    if upload_f:
         ts = datetime.now().strftime("%H%M%S")
         orig_name = upload_f.filename or "recording.wav"
         ext = Path(orig_name).suffix or ".wav"
         tmp_path = UPLOAD_TMP / f"hum_{ts}{ext}"
         with open(tmp_path, "wb") as f:
             shutil.copyfileobj(upload_f.file, f)
+        should_cleanup = True
+    elif filename:
+        found = _find_audio_file(filename)
+        if not found or not found.exists():
+            raise HTTPException(status_code=404, detail=f"Audio file '{filename}' not found.")
+        tmp_path = found
+        should_cleanup = False
+    else:
+        raise HTTPException(status_code=400, detail="No audio file, voice recording, or filename provided.")
 
+    try:
         from audio_processing import hum_to_beat
         t0 = time.time()
-        out_path, duration = hum_to_beat(
+        res = hum_to_beat(
             audio_path=str(tmp_path),
             prompt=prompt,
             device=_device,
             dtype=_dtype,
         )
+        if len(res) == 3:
+            out_path, duration, analysis = res
+        else:
+            out_path, duration = res
+            analysis = {}
+
         elapsed = round(time.time() - t0, 1)
-        tmp_path.unlink(missing_ok=True)
+        if should_cleanup and tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
         return {
-            "url":       f"/audio/{out_path.name}",
-            "audio_url": f"/audio/{out_path.name}",
-            "filename":  out_path.name,
-            "duration":  round(duration, 2),
-            "elapsed":   elapsed,
-            "device":    f"{_device} ({_gpu_name})",
+            "url":         f"/audio/{out_path.name}",
+            "audio_url":   f"/audio/{out_path.name}",
+            "filename":    out_path.name,
+            "duration":    round(duration, 2),
+            "elapsed":     elapsed,
+            "device":      f"{_device} ({_gpu_name})",
+            "analysis":    analysis,
+            "key":         analysis.get("key", "C Major"),
+            "bpm":         analysis.get("bpm", 120),
+            "notes":       analysis.get("notes_str", ""),
+            "notes_count": analysis.get("notes_count", 0),
         }
     except Exception as e:
         import traceback

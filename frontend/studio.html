@@ -19,10 +19,42 @@
 body{background:var(--bg-canvas);color:var(--text-primary);font-family:'Space Grotesk',sans-serif;line-height:1.5;}
 h1,h2,h3{font-family:'Archivo Black',sans-serif;color:var(--accent);}
 .glass{background:rgba(7,7,10,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(237,232,223,.4);box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(237,232,223,.12);border-radius:12px;}@supports not(backdrop-filter:blur(12px)){.glass{background:#0b0b0f;border:1px solid #4A4A55;}}
-.page{max-width:1100px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:1fr 340px;gap:24px;}
+.page{max-width:1480px;margin:0 auto;padding:24px 32px 64px;display:grid;grid-template-columns:1fr 400px;gap:32px;}
+@media(max-width:1100px){.page{grid-template-columns:1fr;padding:16px;}}
+
+/* ── Hero Presentation Feature Showcase ── */
+.studio-hero-banner{max-width:1480px;margin:16px auto 0;padding:0 32px;}
+@media(max-width:1100px){.studio-hero-banner{padding:0 16px;}}
+.feature-showcase-box{background:linear-gradient(135deg, rgba(16,16,24,.92) 0%, rgba(10,10,16,.98) 100%);border:1px solid rgba(237,232,223,.18);border-radius:14px;padding:22px 26px;box-shadow:0 14px 44px rgba(0,0,0,.5);position:relative;overflow:hidden;}
+.feature-showcase-box::before{content:'';position:absolute;top:-50%;left:-20%;width:140%;height:200%;background:radial-gradient(circle at 50% 20%, rgba(240,136,62,.08) 0%, rgba(188,140,255,.06) 35%, transparent 70%);pointer-events:none;}
+.showcase-top-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:16px;}
+.showcase-title-area h1{font-size:22px;color:#fff;margin:0 0 4px;letter-spacing:-0.02em;display:flex;align-items:center;gap:10px;}
+.showcase-title-badge{font-size:10px;font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:.08em;padding:3px 8px;border-radius:6px;background:rgba(240,136,62,.2);border:1px solid rgba(240,136,62,.45);color:#f0883e;}
+.showcase-subtitle{font-size:12.5px;color:var(--text-muted);margin:0;}
+.showcase-demos-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.demo-tag-label{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;}
+.demo-quick-btn{font-size:11.5px;font-weight:700;padding:7px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--text-primary);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .18s;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.demo-quick-btn:hover{background:rgba(237,232,223,.14);border-color:var(--accent);transform:translateY(-1px);color:#fff;}
+.demo-quick-btn.active{background:rgba(240,136,62,.22);border-color:#f0883e;color:#fff;}
+
+.feature-deck-grid{display:grid;grid-template-columns:repeat(6, 1fr);gap:12px;}
+@media(max-width:1250px){.feature-deck-grid{grid-template-columns:repeat(3, 1fr);}}
+@media(max-width:720px){.feature-deck-grid{grid-template-columns:repeat(2, 1fr);}}
+.feat-deck-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s ease;display:flex;flex-direction:column;gap:6px;position:relative;}
+.feat-deck-card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.22);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.35);}
+.feat-deck-card.active{background:rgba(240,136,62,.12);border-color:rgba(240,136,62,.55);box-shadow:0 0 16px rgba(240,136,62,.2);}
+.feat-card-top{display:flex;align-items:center;justify-content:space-between;}
+.feat-card-icon{font-size:20px;}
+.feat-card-pill{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.07);color:var(--text-muted);letter-spacing:.04em;}
+.feat-deck-card.active .feat-card-pill{background:rgba(240,136,62,.3);color:#f0883e;}
+.feat-card-title{font-size:12.5px;font-weight:700;color:var(--text-primary);line-height:1.2;}
+.feat-card-desc{font-size:10.5px;color:var(--text-muted);line-height:1.3;}
+
+/* Module Section Badges */
+.module-badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.08em;padding:3px 9px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;}
 
 /* Controls panel */
-.controls-panel{padding:24px;}
+.controls-panel{padding:28px;}
 .controls-panel h2{font-size:16px;font-weight:600;margin-bottom:20px;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
 .form-group{display:flex;flex-direction:column;gap:6px;}
@@ -239,15 +271,135 @@ select option{background:var(--bg-overlay);}
 <body>
 <div id="nav-root"></div>
 
+<!-- ══════════════════════════════════════════════════════════════════
+     HERO PRESENTATION & FEATURE SHOWCASE DECK
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="studio-hero-banner fade-in visible">
+  <div class="feature-showcase-box">
+    <div class="showcase-top-row">
+      <div class="showcase-title-area">
+        <h1>
+          <span>Melodify Production Suite</span>
+          <span class="showcase-title-badge">FULL FEATURE SUITE</span>
+        </h1>
+        <p class="showcase-subtitle">
+          Intelligent Multi-Genre Beat Generation • Real-Time Voice Hum Pitch Tracking • 4-Track Stem DAW • True-Peak AI Mastering • Bit-Exact FCA Codec
+        </p>
+      </div>
+
+      <!-- 1-Click Presentation Quick Demo Triggers -->
+      <div class="showcase-demos-row">
+        <span class="demo-tag-label">⚡ 1-Click Demos:</span>
+        <button type="button" class="demo-quick-btn" id="demo-btn-trap" onclick="loadPresentationDemo('trap')" title="1-Click: Atlanta 808 Trap with sliding bass & crisp hats">
+          <span>🔥 Atlanta Trap 808</span>
+        </button>
+        <button type="button" class="demo-quick-btn" id="demo-btn-lofi" onclick="loadPresentationDemo('lofi')" title="1-Click: Warm Rhodes piano & boom bap drums">
+          <span>☕ Lo-Fi Chill</span>
+        </button>
+        <button type="button" class="demo-quick-btn" id="demo-btn-hum" onclick="loadPresentationDemo('hum')" title="1-Click: Open Voice Hum Recognition & Pitch Tracker">
+          <span>🎙️ Hum-to-Beat</span>
+        </button>
+        <button type="button" class="demo-quick-btn" id="demo-btn-stems" onclick="loadPresentationDemo('stems')" title="1-Click: Open 4-Track DAW Stem Separator">
+          <span>🎚️ 4-Track DAW</span>
+        </button>
+        <button type="button" class="demo-quick-btn" id="demo-btn-fca" onclick="loadPresentationDemo('fca')" title="1-Click: Jump to FCA Research Audio Codec">
+          <span>🧬 FCA Codec</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 6-Feature Interactive Showcase Cards -->
+    <div class="feature-deck-grid">
+      <!-- 1. AI Beat Generation -->
+      <div class="feat-deck-card active" id="feat-card-prompt" onclick="switchStudioMode('prompt')">
+        <div class="feat-card-top">
+          <span class="feat-card-icon">🎹</span>
+          <span class="feat-card-pill" id="feat-pill-prompt">ACTIVE</span>
+        </div>
+        <div class="feat-card-title">AI Beat Generator</div>
+        <div class="feat-card-desc">Text prompts, 24 moods, scale & BPM auto-suggestions</div>
+      </div>
+
+      <!-- 2. Live Hum-to-Beat -->
+      <div class="feat-deck-card" id="feat-card-hum" onclick="switchStudioMode('hum-mic')">
+        <div class="feat-card-top">
+          <span class="feat-card-icon">🎙️</span>
+          <span class="feat-card-pill" id="feat-pill-hum">READY</span>
+        </div>
+        <div class="feat-card-title">Live Hum-to-Beat</div>
+        <div class="feat-card-desc">Real-time pitch tracking, note detection & dynamic harmony</div>
+      </div>
+
+      <!-- 3. Audio File Transform -->
+      <div class="feat-deck-card" id="feat-card-upload" onclick="switchStudioMode('hum-file')">
+        <div class="feat-card-top">
+          <span class="feat-card-icon">📁</span>
+          <span class="feat-card-pill" id="feat-pill-upload">READY</span>
+        </div>
+        <div class="feat-card-title">Audio Transform</div>
+        <div class="feat-card-desc">Upload any audio file & convert to distinct new beat</div>
+      </div>
+
+      <!-- 4. 4-Track Stem DAW -->
+      <div class="feat-deck-card" id="feat-card-daw" onclick="toggleDawSection()">
+        <div class="feat-card-top">
+          <span class="feat-card-icon">🎚️</span>
+          <span class="feat-card-pill">DAW MIXER</span>
+        </div>
+        <div class="feat-card-title">4-Track Stem DAW</div>
+        <div class="feat-card-desc">Acoustic HPSS stem separator, mute/solo, 8D audio & faders</div>
+      </div>
+
+      <!-- 5. AI Audio Mastering & Tools -->
+      <div class="feat-deck-card" id="feat-card-tools" onclick="scrollToAudioTools()">
+        <div class="feat-card-top">
+          <span class="feat-card-icon">⚡</span>
+          <span class="feat-card-pill">STUDIO FX</span>
+        </div>
+        <div class="feat-card-title">AI Master & Tools</div>
+        <div class="feat-card-desc">True-peak LUFS limiter, key/BPM analyzer & MIDI export</div>
+      </div>
+
+      <!-- 6. FCA Research Codec & Repos -->
+      <div class="feat-deck-card" id="feat-card-fca" onclick="scrollToFcaCodec()">
+        <div class="feat-card-top">
+          <span class="feat-card-icon">🧬</span>
+          <span class="feat-card-pill">RESEARCH</span>
+        </div>
+        <div class="feat-card-title">FCA Codec & Git</div>
+        <div class="feat-card-desc">Bit-exact lossless compression & project versioning</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <main class="page">
 <!-- LEFT: Generator -->
 <div class="studio-left">
 <!-- Generate card -->
 <div class="glass controls-panel fade-in">
 <div class="section-header">
-  <h2>AI Beat Generator</h2>
+  <div>
+    <span class="module-badge">MODULE 01 • INTELLIGENT AUDIO SYNTHESIS</span>
+    <h2 style="margin-top:2px;">AI Beat Studio</h2>
+  </div>
   <button class="reset-btn" onclick="resetGenerator()" title="Clear all fields">&#8635; Reset</button>
 </div>
+
+<!-- Primary Creation Mode Switcher: Text Prompt vs Live Mic Recording vs Upload Audio File -->
+<div class="mode-tabs-row" style="display:flex;gap:8px;margin-bottom:16px;background:rgba(255,255,255,.04);padding:5px;border-radius:10px;border:1px solid rgba(255,255,255,.08);">
+  <button type="button" id="tab-btn-prompt" class="btn btn-sm btn-orange" onclick="switchStudioMode('prompt')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;padding:8px 10px;border-radius:7px;cursor:pointer;transition:all .15s;">
+    <span>🎹 Text to Beat</span>
+  </button>
+  <button type="button" id="tab-btn-hum-mic" class="btn btn-sm btn-ghost" onclick="switchStudioMode('hum-mic')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;padding:8px 10px;border-radius:7px;cursor:pointer;transition:all .15s;">
+    <span>🎙️ Live Hum & Record</span>
+  </button>
+  <button type="button" id="tab-btn-hum-file" class="btn btn-sm btn-ghost" onclick="switchStudioMode('hum-file')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;padding:8px 10px;border-radius:7px;cursor:pointer;transition:all .15s;">
+    <span>📁 Upload & Convert</span>
+  </button>
+</div>
+
+<div id="prompt-mode-container" style="display:block;">
 
 <!-- Quick Inspiration Pills -->
 <div class="quick-insp-row">
@@ -391,53 +543,46 @@ select option{background:var(--bg-overlay);}
 </div>
 
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
-<button class="btn btn-green" id="gen-btn" onclick="generateBeat()" style="flex:1;">Generate Beat</button>
-<button class="btn btn-orange" id="hum-btn" onclick="triggerHum()">Hum</button>
+<button class="btn btn-green" id="gen-btn" onclick="generateBeat()" style="flex:1;">🎹 Generate Beat</button>
+<button type="button" class="btn btn-orange" id="hum-btn" onclick="switchStudioMode('hum-mic')">🎙️ Live Hum to Beat</button>
 <button class="btn btn-blue" id="cont-btn" onclick="continueBeat()" disabled>⏭ Continue</button>
 </div>
 
 <div class="status-bar" id="gen-status"></div>
-</div>
+</div> <!-- end #prompt-mode-container -->
 
-<!-- Generated beats list -->
-<div style="display:flex;align-items:center;justify-content:space-between;min-height:24px;" id="beats-list-header">
-  <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Generated Beats</span>
-  <button class="reset-btn" onclick="clearBeats()" id="clear-beats-btn" style="display:none;">&#10005; Clear All</button>
-</div>
-<div id="beats-list" style="display:flex;flex-direction:column;gap:12px;"></div>
-
-<!-- Real-Time Voice Hum to Beat Section -->
-<div id="hum-section" class="glass fade-in" style="padding:22px;display:none;margin-top:14px;border:1px solid rgba(240,136,62,0.4);box-shadow:0 12px 36px rgba(0,0,0,0.45);">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-size:20px;">🎙️</span>
+<!-- HUM & VOICE AUDIO CONVERSION MODE CONTAINER -->
+<div id="hum-mode-container" style="display:none;margin-top:4px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.07);">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:22px;background:rgba(240,136,62,0.15);padding:6px 10px;border-radius:8px;border:1px solid rgba(240,136,62,0.3);">🎙️</span>
       <div>
-        <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0;">Real-Time Voice Hum to Beat</h3>
-        <span style="font-size:11px;color:var(--text-muted);">Sing, hum or whistle a melody — Melodify converts it to a full beat!</span>
+        <span class="module-badge">MODULE 02 • LIVE ACOUSTIC RECOGNITION & SYNTHESIS</span>
+        <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0;">Voice Hum to Beat Studio</h3>
+        <span style="font-size:11.5px;color:var(--text-muted);">Sing, hum, or whistle a melody live — or upload an audio file instead — to convert into a distinct new beat!</span>
       </div>
     </div>
-    <button class="reset-btn" onclick="closeHumSection()" title="Close">&#10005; Close</button>
   </div>
 
-  <!-- Mode Selector Tabs: Live Mic vs Upload File -->
+  <!-- Sub-mode Selector: Live Mic vs Upload File Instead -->
   <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid var(--border-muted);padding-bottom:10px;">
     <button type="button" id="hum-tab-mic" class="btn btn-sm btn-orange" onclick="switchHumTab('mic')" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;">
       <span>🔴 Live Mic Recording</span>
     </button>
     <button type="button" id="hum-tab-file" class="btn btn-sm btn-ghost" onclick="switchHumTab('file')" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;border-color:rgba(255,255,255,0.12);">
-      <span>📁 Upload Audio File</span>
+      <span>📁 Upload Audio File Instead</span>
     </button>
   </div>
 
   <!-- 1. LIVE MIC RECORDING PANEL -->
   <div id="hum-mic-panel" style="display:block;">
     <!-- Live Visualizer Canvas & Time -->
-    <div style="position:relative;width:100%;height:80px;background:var(--bg-inset);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;display:flex;align-items:center;justify-content:center;">
+    <div style="position:relative;width:100%;height:84px;background:var(--bg-inset);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;display:flex;align-items:center;justify-content:center;">
       <canvas id="hum-viz-canvas" style="width:100%;height:100%;display:block;"></canvas>
       <div id="hum-viz-placeholder" style="position:absolute;color:var(--text-muted);font-size:12px;pointer-events:none;display:flex;align-items:center;gap:6px;">
-        <span>🎙️ Click "Start Recording" & begin humming your melody…</span>
+        <span>🎙️ Click "Start Recording" & begin humming or singing your melody…</span>
       </div>
-      <div id="hum-rec-badge" style="position:absolute;top:8px;right:10px;display:none;align-items:center;gap:6px;background:rgba(248,113,113,0.2);border:1px solid rgba(248,113,113,0.5);padding:2px 8px;border-radius:12px;font-size:11px;color:#f87171;font-weight:700;">
+      <div id="hum-rec-badge" style="position:absolute;top:8px;right:10px;display:none;align-items:center;gap:6px;background:rgba(248,113,113,0.2);border:1px solid rgba(248,113,113,0.5);padding:3px 10px;border-radius:12px;font-size:11px;color:#f87171;font-weight:700;">
         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f87171;"></span>
         <span id="hum-rec-time">00:00</span>
       </div>
@@ -454,11 +599,11 @@ select option{background:var(--bg-overlay);}
       <button type="button" id="hum-rerec-btn" class="btn btn-ghost" onclick="resetHumRecording()" style="display:none;align-items:center;gap:5px;font-size:12px;cursor:pointer;">
         <span>↺ Re-Record</span>
       </button>
-      <span id="hum-rec-status-text" style="font-size:11.5px;color:var(--text-muted);margin-left:auto;">Record up to 30 sec</span>
+      <span id="hum-rec-status-text" style="font-size:11.5px;color:var(--text-muted);margin-left:auto;">Record up to 30 sec (16-bit PCM WAV)</span>
     </div>
 
     <!-- Recorded Audio Player Preview -->
-    <div id="hum-preview-wrap" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);">
+    <div id="hum-preview-wrap" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);">
       <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;font-weight:600;">Recorded Voice Preview</div>
       <audio id="hum-audio-preview" controls style="width:100%;height:36px;border-radius:4px;outline:none;"></audio>
     </div>
@@ -466,9 +611,14 @@ select option{background:var(--bg-overlay);}
 
   <!-- 2. FILE UPLOAD PANEL -->
   <div id="hum-file-panel" style="display:none;margin-bottom:12px;">
-    <div style="padding:16px;border:1px dashed var(--border);border-radius:8px;text-align:center;background:var(--bg-inset);">
-      <input type="file" id="hum-file" accept="audio/*" onchange="onHumFileSelected(this)" style="font-size:13px;width:100%;color:var(--text-secondary);"/>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Supported: WAV, MP3, M4A, OGG, WEBM</div>
+    <div style="padding:18px;border:1px dashed var(--border);border-radius:8px;text-align:center;background:var(--bg-inset);">
+      <input type="file" id="hum-file" accept="audio/*" onchange="onHumFileSelected(this)" style="font-size:13px;width:100%;color:var(--text-secondary);cursor:pointer;"/>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Supported audio formats: WAV, MP3, M4A, OGG, FLAC, WEBM</div>
+    </div>
+    <!-- Uploaded Audio Player Preview -->
+    <div id="hum-file-preview-wrap" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;font-weight:600;">Uploaded Audio Preview</div>
+      <audio id="hum-file-preview" controls style="width:100%;height:36px;border-radius:4px;outline:none;"></audio>
     </div>
   </div>
 
@@ -477,35 +627,57 @@ select option{background:var(--bg-overlay);}
     <div class="form-group">
       <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Beat Style</label>
       <select id="hum-style-select" style="font-size:13px;">
-        <option value="Trap / Hip-Hop">Trap / Hip-Hop (808 Bass)</option>
-        <option value="Lo-fi Chill">Lo-Fi Chill (Warm Rhodes)</option>
-        <option value="EDM / Club Banger">EDM / Club Banger</option>
-        <option value="Synthwave">Synthwave (80s Neon)</option>
-        <option value="Afrobeats">Afrobeats (Lagos Plucks)</option>
+        <option value="Trap / Hip-Hop">Trap / Hip-Hop (808 Bass & Rolls)</option>
+        <option value="Lo-fi Chill">Lo-Fi Chill (Warm Rhodes & Boom Bap)</option>
+        <option value="Synthwave">Synthwave (80s Neon Arp)</option>
+        <option value="Afrobeats">Afrobeats (Syncopated Log Drum)</option>
+        <option value="EDM / Club Banger">EDM / Club Banger (4-on-the-floor)</option>
+        <option value="Piano">Acoustic Grand Piano</option>
+        <option value="Rock">Indie Rock Guitar</option>
+        <option value="Phonk">Drift Phonk (Cowbell & 808)</option>
         <option value="Deep House">Deep House</option>
-        <option value="Piano">Acoustic Piano</option>
         <option value="Ambient">Ambient Soundscape</option>
       </select>
     </div>
     <div class="form-group">
-      <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Custom Prompt (Optional)</label>
-      <input type="text" id="hum-prompt-input" placeholder="e.g. punchy drums, synth lead, deep bass" style="font-size:13px;"/>
+      <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Custom Prompt / Flavor (Optional)</label>
+      <input type="text" id="hum-prompt-input" placeholder="e.g. heavy bass, emotional chords, crisp percussion" style="font-size:13px;"/>
     </div>
   </div>
 
   <!-- Convert Action Button -->
-  <button type="button" id="hum-convert-btn" class="btn btn-green" onclick="submitHum()" style="width:100%;font-size:13.5px;font-weight:700;padding:10px 0;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
-    <span>⚡ Convert Hum to Beat</span>
+  <button type="button" id="hum-convert-btn" class="btn btn-green" onclick="submitHum()" style="width:100%;font-size:14px;font-weight:700;padding:11px 0;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:linear-gradient(135deg, #10b981 0%, #059669 100%);box-shadow:0 4px 14px rgba(16,185,129,.35);">
+    <span>⚡ Convert Hum to Distinct Beat</span>
   </button>
   <div class="status-bar" id="hum-status"></div>
 </div>
+
+</div> <!-- end .controls-panel -->
+
+<!-- Generated beats list -->
+<div style="display:flex;align-items:center;justify-content:space-between;min-height:24px;margin-top:20px;" id="beats-list-header">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="module-badge" style="margin:0;">MODULE 03 • GENERATED AUDIO ARTIFACTS</span>
+    <button type="button" class="btn btn-sm btn-purple" onclick="toggleDawSection()" style="font-size:11.5px;padding:4px 10px;font-weight:700;display:inline-flex;align-items:center;gap:5px;border-radius:6px;cursor:pointer;">
+      <span>🎚️ 4-Track DAW Studio</span>
+    </button>
+  </div>
+  <button class="reset-btn" onclick="clearBeats()" id="clear-beats-btn" style="display:none;">&#10005; Clear All</button>
 </div>
+<div id="beats-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+</div> <!-- end .studio-left -->
 
 <!-- RIGHT: Sidebar -->
 <div class="side-panel">
 <!-- Save to project -->
-<div class="glass side-section fade-in">
-<div class="section-header"><h3>Save to Project</h3><button class="reset-btn" onclick="resetSave()" title="Clear form">&#8635; Reset</button></div>
+<div class="glass side-section fade-in" id="repo-section">
+<div class="section-header">
+  <div>
+    <span class="module-badge">MODULE 05 • REPO COMMIT & LICENSING</span>
+    <h3 style="margin-top:2px;">Save to Project</h3>
+  </div>
+  <button class="reset-btn" onclick="resetSave()" title="Clear form">&#8635; Reset</button>
+</div>
 <div class="commit-form-row">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
   <label style="margin:0;font-size:12px;font-weight:600;color:var(--text-secondary);">Repository</label>
@@ -556,8 +728,14 @@ select option{background:var(--bg-overlay);}
 </div>
 
 <!-- Audio tools -->
-<div class="glass side-section fade-in">
-<div class="section-header"><h3>Audio Tools</h3><button class="reset-btn" onclick="resetTools()" title="Clear loaded audio">&#8635; Reset</button></div>
+<div class="glass side-section fade-in" id="audio-tools-card">
+<div class="section-header">
+  <div>
+    <span class="module-badge">MODULE 04 • MASTERING & STEM TOOLS</span>
+    <h3 style="margin-top:2px;">Audio Tools</h3>
+  </div>
+  <button class="reset-btn" onclick="resetTools()" title="Clear loaded audio">&#8635; Reset</button>
+</div>
 
 <!-- ── Select Audio Source ── -->
 <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(58,58,58,.7);">
@@ -569,17 +747,26 @@ select option{background:var(--bg-overlay);}
 <option value="">— Pick a generated beat —</option>
 </select>
 
-<!-- Upload any audio file -->
-<label style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:6px 0;background:rgba(31,111,235,.12);border:1px dashed rgba(88,166,255,.4);border-radius:6px;font-size:13px;color:var(--blue);cursor:pointer;transition:background .2s;"
-  onmouseover="this.style.background='rgba(31,111,235,.22)'" onmouseout="this.style.background='rgba(31,111,235,.12)'">
-<input type="file" id="upload-audio-input" accept="audio/*" onchange="uploadAudioFile(this)" style="display:none;">Upload Audio File
-</label>
+<!-- Side-by-side Audio Source Actions: Upload File vs Record Live Mic -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+  <!-- Upload any audio file -->
+  <label style="display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:7px 0;background:rgba(31,111,235,.12);border:1px dashed rgba(88,166,255,.4);border-radius:6px;font-size:12px;color:var(--blue);cursor:pointer;transition:background .2s;"
+    onmouseover="this.style.background='rgba(31,111,235,.22)'" onmouseout="this.style.background='rgba(31,111,235,.12)'" title="Upload an audio file from your device">
+    <input type="file" id="upload-audio-input" accept="audio/*" onchange="uploadAudioFile(this)" style="display:none;">📁 Upload Audio
+  </label>
+
+  <!-- Live Record Voice / Hum Button -->
+  <button type="button" class="btn btn-sm btn-orange" onclick="switchStudioMode('hum-mic'); document.querySelector('.studio-left')?.scrollIntoView({behavior:'smooth'});" style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;padding:7px 0;border-radius:6px;cursor:pointer;" title="Record voice humming live with microphone">
+    <span>🎙️ Record Voice</span>
+  </button>
+</div>
 
 <!-- Currently loaded file indicator -->
 <div id="current-audio-label" style="display:none;margin-top:6px;font-size:11px;color:var(--green-accent);word-break:break-all;"></div>
 </div>
 
 <div style="display:flex;flex-direction:column;gap:8px;">
+<button class="btn btn-orange" onclick="convertLoadedAudioToBeat()" style="font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg, #f0883e 0%, #e056fd 100%);border:none;box-shadow:0 4px 14px rgba(240,136,62,.35);">⚡ Convert to Distinct Beat</button>
 <button class="btn btn-blue" onclick="analyzeAudio()">Analyze BPM / Key</button>
 <button class="btn btn-purple" onclick="separateStems()">Separate Stems (DAW)</button>
 <button class="btn btn-orange" onclick="masterAudio()">AI Master</button>
@@ -598,10 +785,13 @@ select option{background:var(--bg-overlay);}
 <!-- FCA Audio Optimizer (Frequency Coded Audio) -->
 <div class="glass side-section fade-in" id="fca-card">
 <div class="section-header">
-  <h3 style="display:flex;align-items:center;gap:6px;">
-    <span>⚡ FCA Audio Optimizer</span>
-    <span style="font-size:9.5px;padding:2px 6px;border-radius:4px;background:rgba(237,232,223,.12);color:var(--text-primary);letter-spacing:0.04em;">RESEARCH CODEC</span>
-  </h3>
+  <div>
+    <span class="module-badge">MODULE 06 • RESEARCH AUDIO CODEC</span>
+    <h3 style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+      <span>⚡ FCA Audio Optimizer</span>
+      <span style="font-size:9.5px;padding:2px 6px;border-radius:4px;background:rgba(237,232,223,.12);color:var(--text-primary);letter-spacing:0.04em;">RESEARCH</span>
+    </h3>
+  </div>
   <button class="reset-btn" onclick="resetFcaOptimizer()" title="Reset FCA optimizer">&#8635; Reset</button>
 </div>
 <p style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">
@@ -671,7 +861,10 @@ select option{background:var(--bg-overlay);}
 <!-- AI Lyrics & Teleprompter Card -->
 <div class="glass side-section fade-in" id="lyrics-card">
 <div class="section-header">
-  <h3>🎤 AI Lyrics & Vocals</h3>
+  <div>
+    <span class="module-badge">MODULE 07 • VOCALS & LYRICS ENGINE</span>
+    <h3 style="margin-top:2px;">🎤 AI Lyrics & Vocals</h3>
+  </div>
   <button class="reset-btn" onclick="generateLyrics()" title="Generate lyrics with AI">✨ Generate</button>
 </div>
 <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Auto-generate verse & chorus lyrics synced to your beat tempo.</p>
@@ -1067,38 +1260,62 @@ function drawWaveform(canvas, peaks){
 function makeFakePeaks(n=80){ return Array.from({length:n},()=>0.1+Math.random()*0.85); }
 
 /* ── Add beat card to UI ──────────────────────────────────────── */
-function addBeatCard(filename, beatName, audioUrl){
-  _currentFile=audioUrl;
-  _currentFilename=filename;
+function addBeatCard(filename, beatName, audioUrl, meta = {}){
+  _currentFile = audioUrl;
+  _currentFilename = filename;
   // populate session-beat dropdown
-  const sel=document.getElementById('session-beat-select');
+  const sel = document.getElementById('session-beat-select');
   if(sel){
-  // remove duplicate if already exists
-  const existing=[...sel.options].find(o=>o.value===filename);
-  if(!existing){ const o=document.createElement('option'); o.value=filename; o.textContent=beatName||filename; sel.appendChild(o); }
-  sel.value=filename;
+    // remove duplicate if already exists
+    const existing = [...sel.options].find(o => o.value === filename);
+    if(!existing){
+      const o = document.createElement('option');
+      o.value = filename;
+      o.textContent = beatName || filename;
+      sel.appendChild(o);
+    }
+    sel.value = filename;
   }
   // update label
-  const lbl=document.getElementById('current-audio-label');
-  if(lbl){ lbl.textContent='✓ '+( beatName||filename); lbl.style.display='block'; }
-  const container=document.getElementById('beats-list');
-  const id='beat-'+Date.now();
-  const div=document.createElement('div');
-  div.className='beat-card fade-in';
-  div.id=id;
-  div.innerHTML=`
-<div class="beat-card-header">
-<span class="beat-card-name"> ${beatName}</span>
-<span class="tag">${new Date().toLocaleTimeString()}</span>
+  const lbl = document.getElementById('current-audio-label');
+  if(lbl){
+    lbl.textContent = '✓ ' + (beatName || filename);
+    lbl.style.display = 'block';
+  }
+  const container = document.getElementById('beats-list');
+  const id = 'beat-' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'beat-card fade-in';
+  div.id = id;
+
+  // Build musical badges if metadata is present
+  let metaBadgesHtml = '';
+  if(meta && (meta.key || meta.bpm || meta.notes || meta.genre)){
+    const pills = [];
+    if(meta.genre) pills.push(`<span class="tag" style="background:rgba(180,140,255,.15);border-color:rgba(180,140,255,.3);color:#c4a4ff;">⚡ ${meta.genre}</span>`);
+    if(meta.key) pills.push(`<span class="tag" style="background:rgba(88,166,255,.15);border-color:rgba(88,166,255,.3);color:#7eb8f7;">🔑 ${meta.key}</span>`);
+    if(meta.bpm) pills.push(`<span class="tag" style="background:rgba(255,214,102,.15);border-color:rgba(255,214,102,.3);color:#ffd666;">⏱️ ${Math.round(meta.bpm)} BPM</span>`);
+    if(meta.notes) pills.push(`<span class="tag" style="background:rgba(63,185,80,.15);border-color:rgba(63,185,80,.3);color:#50c878;font-family:monospace;" title="Recognized pitch notes">🎵 ${meta.notes}</span>`);
+    metaBadgesHtml = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px;">${pills.join('')}</div>`;
+  }
+
+  div.innerHTML = `
+<div class="beat-card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+  <span class="beat-card-name" style="font-size:14px;font-weight:700;">${beatName}</span>
+  <span class="tag">${new Date().toLocaleTimeString()}</span>
 </div>
+${metaBadgesHtml}
 <div class="beat-card-body">
-<div class="viz-wrap" id="vw-${id}"></div>
-<audio id="audio-${id}" src="${audioUrl}" crossorigin="anonymous" preload="auto" style="display:none;"></audio>
-<div class="beat-actions">
-<button class="btn btn-green" onclick="togglePlay('${id}')">▶ Play</button>
-<a class="btn btn-ghost" href="${audioUrl}" download="${filename}" style="font-size:13px;">⬇ Download</a>
-<button class="btn btn-blue" onclick="setCurrentAndSave('${filename}','${audioUrl}')">Save</button>
-</div>
+  <div class="viz-wrap" id="vw-${id}"></div>
+  <audio id="audio-${id}" src="${audioUrl}" crossorigin="anonymous" preload="auto" style="display:none;"></audio>
+  <div class="beat-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+    <button class="btn btn-green btn-sm" onclick="togglePlay('${id}')">▶ Play</button>
+    <button class="btn btn-purple btn-sm" onclick="loadInDaw('${filename}')" title="Separate into 4 stems and open interactive DAW">🎚️ DAW Stems</button>
+    <button class="btn btn-orange btn-sm" onclick="masterFromCard('${filename}')" title="True-peak AI Mastering (-14 LUFS)">⚡ Master</button>
+    <button class="btn btn-ghost btn-sm" onclick="fcaCompressFromCard('${filename}')" title="Compress with FCA bit-exact audio codec">🧬 FCA</button>
+    <a class="btn btn-ghost btn-sm" href="${audioUrl}" download="${filename}">⬇ Download</a>
+    <button class="btn btn-blue btn-sm" onclick="setCurrentAndSave('${filename}','${audioUrl}')">Save</button>
+  </div>
 </div>`;
   container.insertBefore(div, container.firstChild);
   setTimeout(()=>div.classList.add('visible'),50);
@@ -1107,6 +1324,27 @@ function addBeatCard(filename, beatName, audioUrl){
   if(clrBtn) clrBtn.style.display='inline-flex';
   // queue visualizer mount (safe before or after module loads)
   window._vizQueue.push({ wrapId:'vw-'+id, audioId:'audio-'+id });
+}
+
+function loadInDaw(filename){
+  _currentFilename = filename;
+  _currentFile = `${API}/audio/${filename}`;
+  pickSessionBeat(filename);
+  separateStems();
+}
+
+function masterFromCard(filename){
+  _currentFilename = filename;
+  _currentFile = `${API}/audio/${filename}`;
+  pickSessionBeat(filename);
+  masterAudio();
+}
+
+function fcaCompressFromCard(filename){
+  _currentFilename = filename;
+  _currentFile = `${API}/audio/${filename}`;
+  pickSessionBeat(filename);
+  scrollToFcaCodec();
 }
 
 let _playing={};
@@ -1530,7 +1768,15 @@ async function generateBeat(){
   es.close();
   const filename=d.filename||d.audio_url||`beat_${task_id}.wav`;
   const audioUrl=d.audio_url?`${API}${d.audio_url}`:`${API}/audio/${filename}`;
-  setTimeout(()=>{ progWrap.style.display='none'; addBeatCard(filename,beatName,audioUrl); resolve(); },400);
+  setTimeout(()=>{
+    progWrap.style.display='none';
+    addBeatCard(filename, beatName, audioUrl, {
+      key: d.key || key || 'C Major',
+      bpm: d.bpm || bpm || 120,
+      genre: mood || 'Beat'
+    });
+    resolve();
+  },400);
   }
   if(d.status==='error'){ es.close(); reject(new Error(d.message||'Generation failed')); }
   }catch{}
@@ -1604,22 +1850,63 @@ function encodeWAV(samples, sampleRate) {
   return new Blob([view], { type: 'audio/wav' });
 }
 
+let _humMediaRecorder = null;
+let _humMediaChunks = [];
+
+function switchStudioMode(mode){
+  const promptContainer = document.getElementById('prompt-mode-container');
+  const humContainer = document.getElementById('hum-mode-container');
+  const tabPrompt = document.getElementById('tab-btn-prompt');
+  const tabHumMic = document.getElementById('tab-btn-hum-mic');
+  const tabHumFile = document.getElementById('tab-btn-hum-file');
+
+  if(mode === 'prompt'){
+    if(tabPrompt) tabPrompt.className = 'btn btn-sm btn-orange';
+    if(tabHumMic) tabHumMic.className = 'btn btn-sm btn-ghost';
+    if(tabHumFile) tabHumFile.className = 'btn btn-sm btn-ghost';
+    if(promptContainer) promptContainer.style.display = 'block';
+    if(humContainer) humContainer.style.display = 'none';
+  } else if(mode === 'hum-mic'){
+    if(tabPrompt) tabPrompt.className = 'btn btn-sm btn-ghost';
+    if(tabHumMic) tabHumMic.className = 'btn btn-sm btn-orange';
+    if(tabHumFile) tabHumFile.className = 'btn btn-sm btn-ghost';
+    if(promptContainer) promptContainer.style.display = 'none';
+    if(humContainer) humContainer.style.display = 'block';
+    switchHumTab('mic');
+  } else if(mode === 'hum-file'){
+    if(tabPrompt) tabPrompt.className = 'btn btn-sm btn-ghost';
+    if(tabHumMic) tabHumMic.className = 'btn btn-sm btn-ghost';
+    if(tabHumFile) tabHumFile.className = 'btn btn-sm btn-orange';
+    if(promptContainer) promptContainer.style.display = 'none';
+    if(humContainer) humContainer.style.display = 'block';
+    switchHumTab('file');
+  }
+
+  // Synchronize Presentation Showcase Deck cards
+  const featPrompt = document.getElementById('feat-card-prompt');
+  const featHum = document.getElementById('feat-card-hum');
+  const featUpload = document.getElementById('feat-card-upload');
+  const pillPrompt = document.getElementById('feat-pill-prompt');
+  const pillHum = document.getElementById('feat-pill-hum');
+  const pillUpload = document.getElementById('feat-pill-upload');
+  if(featPrompt) featPrompt.classList.toggle('active', mode === 'prompt');
+  if(featHum) featHum.classList.toggle('active', mode === 'hum-mic');
+  if(featUpload) featUpload.classList.toggle('active', mode === 'hum-file');
+  if(pillPrompt) pillPrompt.textContent = (mode === 'prompt') ? 'ACTIVE' : 'READY';
+  if(pillHum) pillHum.textContent = (mode === 'hum-mic') ? 'ACTIVE' : 'READY';
+  if(pillUpload) pillUpload.textContent = (mode === 'hum-file') ? 'ACTIVE' : 'READY';
+}
+
 function triggerHum(){
-  const sec = document.getElementById('hum-section');
-  if(!sec) return;
-  const isHidden = (sec.style.display === 'none' || !sec.style.display);
-  sec.style.display = isHidden ? 'block' : 'none';
-  if(isHidden){
-    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  switchStudioMode('hum-mic');
+  const humContainer = document.getElementById('hum-mode-container');
+  if(humContainer){
+    humContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
 
 function closeHumSection(){
-  if(_isHumRecording){
-    stopHumRecording();
-  }
-  const sec = document.getElementById('hum-section');
-  if(sec) sec.style.display = 'none';
+  switchStudioMode('prompt');
 }
 
 function switchHumTab(mode){
@@ -1628,14 +1915,21 @@ function switchHumTab(mode){
   const tabFile = document.getElementById('hum-tab-file');
   const panelMic = document.getElementById('hum-mic-panel');
   const panelFile = document.getElementById('hum-file-panel');
+  const modeTabMic = document.getElementById('tab-btn-hum-mic');
+  const modeTabFile = document.getElementById('tab-btn-hum-file');
+
   if(mode === 'mic'){
     if(tabMic) tabMic.className = 'btn btn-sm btn-orange';
     if(tabFile) tabFile.className = 'btn btn-sm btn-ghost';
+    if(modeTabMic) modeTabMic.className = 'btn btn-sm btn-orange';
+    if(modeTabFile) modeTabFile.className = 'btn btn-sm btn-ghost';
     if(panelMic) panelMic.style.display = 'block';
     if(panelFile) panelFile.style.display = 'none';
   } else {
     if(tabMic) tabMic.className = 'btn btn-sm btn-ghost';
     if(tabFile) tabFile.className = 'btn btn-sm btn-orange';
+    if(modeTabMic) modeTabMic.className = 'btn btn-sm btn-ghost';
+    if(modeTabFile) modeTabFile.className = 'btn btn-sm btn-orange';
     if(panelMic) panelMic.style.display = 'none';
     if(panelFile) panelFile.style.display = 'block';
   }
@@ -1644,7 +1938,14 @@ function switchHumTab(mode){
 function onHumFileSelected(input){
   const file = input.files[0];
   if(file){
-    showStatus('hum-status', `✓ File selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'ok');
+    showStatus('hum-status', `✓ Audio file selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'ok');
+    const player = document.getElementById('hum-file-preview');
+    const wrap = document.getElementById('hum-file-preview-wrap');
+    if(player && wrap){
+      player.src = URL.createObjectURL(file);
+      player.load();
+      wrap.style.display = 'block';
+    }
   }
 }
 
@@ -1661,6 +1962,18 @@ async function startHumRecording(){
     _humAudioSamples = [];
     _humRecordedWavBlob = null;
     _isHumRecording = true;
+
+    // Cross-browser MediaRecorder fallback
+    if(window.MediaRecorder){
+      try {
+        _humMediaChunks = [];
+        _humMediaRecorder = new MediaRecorder(stream);
+        _humMediaRecorder.ondataavailable = (e) => {
+          if(e.data && e.data.size > 0) _humMediaChunks.push(e.data);
+        };
+        _humMediaRecorder.start(100);
+      } catch(e){}
+    }
 
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     _humAudioContext = new AudioCtx();
@@ -1700,7 +2013,7 @@ async function startHumRecording(){
     document.getElementById('hum-preview-wrap').style.display = 'none';
     document.getElementById('hum-viz-placeholder').style.display = 'none';
     document.getElementById('hum-rec-badge').style.display = 'inline-flex';
-    showStatus('hum-status', '🎙️ Recording live microphone… hum or sing your melody now!', 'info');
+    showStatus('hum-status', '🎙️ Recording live microphone… hum, whistle, or sing your melody now!', 'info');
 
     // Live Timer
     _humSeconds = 0;
@@ -1728,6 +2041,9 @@ function stopHumRecording(){
   _isHumRecording = false;
   clearInterval(_humTimer);
 
+  if(_humMediaRecorder && _humMediaRecorder.state !== 'inactive'){
+    try { _humMediaRecorder.stop(); } catch(e){}
+  }
   if(_humScriptProcessor){
     _humScriptProcessor.disconnect();
     _humScriptProcessor = null;
@@ -1742,7 +2058,11 @@ function stopHumRecording(){
     // Encode to standard 16-bit PCM WAV
     const flatSamples = new Float32Array(_humAudioSamples);
     _humRecordedWavBlob = encodeWAV(flatSamples, _humSampleRate);
+  } else if(_humMediaChunks.length > 0){
+    _humRecordedWavBlob = new Blob(_humMediaChunks, { type: _humMediaRecorder?.mimeType || 'audio/webm' });
+  }
 
+  if(_humRecordedWavBlob){
     const audioUrl = URL.createObjectURL(_humRecordedWavBlob);
     const player = document.getElementById('hum-audio-preview');
     if(player){
@@ -1756,10 +2076,10 @@ function stopHumRecording(){
     const placeHolder = document.getElementById('hum-viz-placeholder');
     if(placeHolder){
       placeHolder.style.display = 'flex';
-      const durSec = (_humAudioSamples.length / _humSampleRate).toFixed(1);
-      placeHolder.innerHTML = `<span>✓ Voice recorded (${durSec}s)! Listen above or click Convert to Beat.</span>`;
+      const durSec = (_humAudioSamples.length / (_humSampleRate || 44100)).toFixed(1);
+      placeHolder.innerHTML = `<span>✓ Voice recorded (${durSec}s)! Listen below or click Convert to Beat.</span>`;
     }
-    showStatus('hum-status', `✓ Recorded ${(_humAudioSamples.length / _humSampleRate).toFixed(1)}s WAV audio. Ready to convert!`, 'ok');
+    showStatus('hum-status', `✓ Recorded ${(_humAudioSamples.length / (_humSampleRate || 44100)).toFixed(1)}s audio. Ready to convert!`, 'ok');
   } else {
     showStatus('hum-status', 'No audio samples detected. Please try recording again.', 'err');
   }
@@ -1887,8 +2207,16 @@ async function submitHum(){
 
     const d = await r.json();
     const audioUrl = `${API}${d.audio_url || d.url}`;
-    const beatName = `Hum Beat: ${styleVal} (${d.filename || 'hum_beat.wav'})`;
-    addBeatCard(d.filename || 'hum_beat.wav', beatName, audioUrl);
+    const recognizedKey = d.key || 'C Major';
+    const recognizedBpm = d.bpm ? `${Math.round(d.bpm)} BPM` : '130 BPM';
+    const notesSummary = d.notes ? ` • 🎵 ${d.notes}` : '';
+    const beatName = `🎙️ Hum Beat (${styleVal}) — ${recognizedKey} • ${recognizedBpm}`;
+    addBeatCard(d.filename || 'hum_beat.wav', beatName, audioUrl, {
+      key: d.key,
+      bpm: d.bpm,
+      notes: d.notes,
+      genre: styleVal
+    });
 
     // Update current active file for Audio Tools, DAW & FCA Optimizer
     _currentFilename = d.filename;
@@ -1907,7 +2235,8 @@ async function submitHum(){
       sessionSel.value = d.filename;
     }
 
-    showStatus('hum-status', `✓ Beat successfully synthesized from your voice humming! (${d.duration ? d.duration + 's' : '10s'})`, 'ok');
+    const noteDetail = d.notes ? ` | Notes: ${d.notes}` : '';
+    showStatus('hum-status', `✓ Voice Melody Recognized! Key: ${recognizedKey} (${recognizedBpm})${noteDetail} → Distinct matching beat synthesized!`, 'ok');
   } catch(err) {
     showStatus('hum-status', `✗ ${err.message}`, 'err');
   } finally {
@@ -1915,6 +2244,90 @@ async function submitHum(){
       convertBtn.disabled = false;
       convertBtn.innerHTML = '<span>⚡ Convert Hum to Beat</span>';
     }
+  }
+}
+
+async function convertLoadedAudioToBeat(){
+  const uploadInput = document.getElementById('upload-audio-input');
+  const humFileInput = document.getElementById('hum-file');
+  let audioFile = null;
+  let filenameToUse = _currentFilename;
+
+  if(uploadInput && uploadInput.files && uploadInput.files[0]){
+    audioFile = uploadInput.files[0];
+  } else if(humFileInput && humFileInput.files && humFileInput.files[0]){
+    audioFile = humFileInput.files[0];
+  } else if(_humRecordedWavBlob){
+    audioFile = new File([_humRecordedWavBlob], `recorded_voice_${Date.now()}.wav`, { type: 'audio/wav' });
+  }
+
+  if(!audioFile && !filenameToUse){
+    switchStudioMode('hum-file');
+    showStatus('tools-status', 'ℹ️ Please upload an audio file or record voice humming first.', 'info');
+    showStatus('hum-status', 'Upload an audio file or record your humming to convert to a distinct beat.', 'info');
+    document.getElementById('hum-mode-container')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  showStatus('tools-status', '⏳ Analyzing audio melody & synthesizing distinct new beat…', 'info');
+
+  const fd = new FormData();
+  if(audioFile){
+    fd.append('file', audioFile);
+    fd.append('audio', audioFile);
+  }
+  if(filenameToUse){
+    fd.append('filename', filenameToUse);
+  }
+
+  const styleVal = document.getElementById('hum-style-select')?.value || 'Trap / Hip-Hop';
+  const customPrompt = document.getElementById('hum-prompt-input')?.value.trim() || '';
+  const fullPrompt = customPrompt ? `${customPrompt} ${styleVal}` : `Distinct synthesized beat from audio in ${styleVal}`;
+  fd.append('prompt', fullPrompt);
+
+  try {
+    const r = await fetch(`${API}/hum`, {
+      method: 'POST',
+      headers: headers,
+      body: fd
+    });
+    if(!r.ok){
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || 'Audio conversion failed');
+    }
+    const d = await r.json();
+    const audioUrl = `${API}${d.audio_url || d.url}`;
+    const recognizedKey = d.key || 'C Major';
+    const recognizedBpm = d.bpm ? `${Math.round(d.bpm)} BPM` : '130 BPM';
+    const beatName = `⚡ Distinct Beat (${styleVal}) — ${recognizedKey} • ${recognizedBpm}`;
+    addBeatCard(d.filename || 'beat.wav', beatName, audioUrl, {
+      key: d.key,
+      bpm: d.bpm,
+      notes: d.notes,
+      genre: styleVal
+    });
+
+    _currentFilename = d.filename;
+    _currentFile = audioUrl;
+    const currentLbl = document.getElementById('current-audio-label');
+    if(currentLbl){
+      currentLbl.textContent = '✓ ' + d.filename;
+      currentLbl.style.display = 'block';
+    }
+    const sessionSel = document.getElementById('session-beat-select');
+    if(sessionSel){
+      const opt = document.createElement('option');
+      opt.value = d.filename;
+      opt.textContent = beatName;
+      sessionSel.appendChild(opt);
+      sessionSel.value = d.filename;
+    }
+
+    const noteDetail = d.notes ? ` (Notes: ${d.notes})` : '';
+    showStatus('tools-status', `✓ Audio Recognized! Key: ${recognizedKey} (${recognizedBpm})${noteDetail} → Distinct new beat synthesized!`, 'ok');
+    document.getElementById('beats-list-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(err){
+    showStatus('tools-status', `✗ ${err.message}`, 'err');
   }
 }
 
@@ -3337,6 +3750,95 @@ async function optimizeFCA(){
     showStatus('fca-status', `✗ ${err.message}`, 'err');
   } finally {
     if(btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  }
+}
+
+/* ── Presentation & Feature Showcase Navigation Helpers ─────────── */
+function loadPresentationDemo(type){
+  if(type === 'trap'){
+    switchStudioMode('prompt');
+    const moodEl = document.getElementById('mood-select');
+    if(moodEl){
+      moodEl.value = 'Trap / Hip-Hop';
+      onMoodChange('Trap / Hip-Hop');
+    }
+    const promptInput = document.getElementById('prompt-input');
+    if(promptInput){
+      promptInput.value = 'Atlanta 808 Trap with hard-hitting sub, sliding 808 bass, crisp roll hats and dark nocturnal piano chords';
+    }
+    const bpmInput = document.getElementById('bpm-input');
+    if(bpmInput) bpmInput.value = 142;
+    document.querySelector('.studio-left')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showStatus('gen-status', '⚡ Demo Ready: Atlanta Trap 808 preset loaded. Click "Generate Beat" to synthesize!', 'info');
+  } else if(type === 'lofi'){
+    switchStudioMode('prompt');
+    const moodEl = document.getElementById('mood-select');
+    if(moodEl){
+      moodEl.value = 'Lo-fi Chill';
+      onMoodChange('Lo-fi Chill');
+    }
+    const promptInput = document.getElementById('prompt-input');
+    if(promptInput){
+      promptInput.value = 'Nostalgic lo-fi chill hop with warm Rhodes electric piano, vinyl dust crackle, soft boom bap drums and soothing bass';
+    }
+    const bpmInput = document.getElementById('bpm-input');
+    if(bpmInput) bpmInput.value = 84;
+    document.querySelector('.studio-left')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showStatus('gen-status', '⚡ Demo Ready: Lo-Fi Chill preset loaded. Click "Generate Beat" to synthesize!', 'info');
+  } else if(type === 'hum'){
+    switchStudioMode('hum-mic');
+    document.getElementById('hum-mode-container')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showStatus('hum-status', '🎙️ Live Voice Hum-to-Beat Ready! Click "Start Recording" or test humming to synthesize a distinct beat.', 'info');
+  } else if(type === 'stems'){
+    toggleDawSection(true);
+  } else if(type === 'fca'){
+    scrollToFcaCodec();
+  }
+}
+
+function toggleDawSection(forceOpen){
+  const daw = document.getElementById('stem-editor');
+  if(!daw) return;
+  const isCurrentlyOpen = daw.classList.contains('active') && daw.style.display !== 'none';
+  const shouldOpen = (forceOpen !== undefined) ? forceOpen : !isCurrentlyOpen;
+
+  const dawCard = document.getElementById('feat-card-daw');
+  if(shouldOpen){
+    daw.classList.add('active');
+    daw.style.display = 'block';
+    daw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if(dawCard) dawCard.classList.add('active');
+    
+    // If no stems are currently separated, check if we have an active audio file to separate or prompt user
+    if(!_stemEditor.tracks || _stemEditor.tracks.length === 0){
+      if(_currentFilename){
+        separateStems();
+      } else {
+        showStatus('tools-status', '🎚️ 4-Track DAW Opened: Generate a beat or load audio above, then click Separate Stems to load track waveforms.', 'info');
+      }
+    }
+  } else {
+    daw.classList.remove('active');
+    daw.style.display = 'none';
+    if(dawCard) dawCard.classList.remove('active');
+  }
+}
+
+function scrollToAudioTools(){
+  const tools = document.getElementById('audio-tools-card');
+  if(tools){
+    tools.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    tools.style.boxShadow = '0 0 0 2px var(--blue)';
+    setTimeout(() => { tools.style.boxShadow = ''; }, 1600);
+  }
+}
+
+function scrollToFcaCodec(){
+  const fca = document.getElementById('fca-card');
+  if(fca){
+    fca.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    fca.style.boxShadow = '0 0 0 2px var(--green-accent)';
+    setTimeout(() => { fca.style.boxShadow = ''; }, 1600);
   }
 }
 
